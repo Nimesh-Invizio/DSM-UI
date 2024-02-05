@@ -16,6 +16,8 @@ import ListItemText from '@mui/material/ListItemText';
 import InboxIcon from '@mui/icons-material/MoveToInbox';
 import {useNavigate} from 'react-router-dom'
 import { useAppStore } from '../AppStore';
+import { SevereCold, StorageOutlined } from '@mui/icons-material';
+import { FaServer, FaStore, FaUser, FaUserCircle } from 'react-icons/fa';
 
 const drawerWidth = 240;
 
@@ -74,11 +76,11 @@ export default function Sidenav() {
   const open = useAppStore((state) => state.dopen)
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', boxShadow: "revert-layer" }}>
       <CssBaseline />
       <Box height={50}/>
-      <Drawer variant="permanent" open={open}>
-        <DrawerHeader>
+      <Drawer variant="permanent" open={open} style={{boxShadow:'grey'}}>
+        <DrawerHeader >
             {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
         </DrawerHeader>
         <Divider />
@@ -99,7 +101,7 @@ export default function Sidenav() {
                     justifyContent: 'center',
                   }}
                 >
-                  <InboxIcon />
+                  <FaServer />
                 </ListItemIcon>
                 <ListItemText primary="Server" sx={{ opacity: open ? 1 : 0 }} />
               </ListItemButton>
@@ -122,7 +124,7 @@ export default function Sidenav() {
                     justifyContent: 'center',
                   }}
                 >
-                  <InboxIcon />
+                  <FaUser />
                 </ListItemIcon>
                 <ListItemText primary="User" sx={{ opacity: open ? 1 : 0 }} />
               </ListItemButton>

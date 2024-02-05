@@ -108,3 +108,10 @@ code {
   font-size: 16px;
   font-weight: 700;
 }
+
+.primary-background {
+  background-color: primary;
+  color: white;
+}
+
+
