@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import { FaPencilAlt } from "react-icons/fa";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { ConstructionOutlined } from "@mui/icons-material";
 
 function Company() {
   const [tableData, setTableData] = useState([]);
@@ -66,6 +67,16 @@ function Company() {
     fetchData();
   }, []);
 
+  const getAllCompany = async () => {
+    try {
+      const response = await Axios.get(
+        `http://127.0.0.1:3000/api/v1/servers/companies/${uniqueId}`
+      );
+      setTableData(response.data.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
   //Create Company Functions
   const handleCreateNewRow = async (values) => {
     try {
@@ -83,23 +94,17 @@ function Company() {
 
   //Edit Company Functions
   const handleEditRow = async (row) => {
-    console.log(uniqueId);
-    console.log(row.id);
     try {
-      console.log("TRY", uniqueId);
-      const response = await Axios.patch(
-        `http://127.0.0.1:3000/api/v1/servers/company/${uniqueId}/${row.id}`,
+      const response = await Axios.get(
+        `http://127.0.0.1:3000/api/v1/servers/singleComp/${uniqueId}/${row.id}`,
         row
       );
+
       console.log("RES", response);
-      if (
-        response &&
-        response.data &&
-        response.data.data &&
-        response.data.data.data
-      ) {
+      if (response && response.data && response.data.data) {
         const updatedData = response.data.data;
-        setEditModalValues(updatedData);
+        console.log("updatedData", updatedData[0]);
+        setEditModalValues(updatedData[0]);
         setEditModalOpen(true);
       } else {
         console.error("No data returned after editing");
@@ -117,6 +122,7 @@ function Company() {
       { accessorKey: "email", header: "Email" },
       { accessorKey: "phone", header: "Contact No." },
       { accessorKey: "maxLicense", header: "Max-License" },
+      // { accessorKey: "taxNumber", header: "Tax-No." },
     ],
     []
   );
@@ -223,7 +229,7 @@ function Company() {
           <EditCompanyModal
             open={editModalOpen}
             onClose={() => setEditModalOpen(false)}
-            onSubmit={handleEditRow}
+            onSubmit={getAllCompany}
             values={editModalValues}
           />
         </Box>
@@ -233,6 +239,7 @@ function Company() {
 }
 
 export const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
+  // const { uniqueId } = useParams();
   const [values, setValues] = useState({
     companyName: "",
     email: "",
@@ -249,8 +256,10 @@ export const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
     isPrimary: 0,
   });
 
-  const handleSubmit = () => {
-    // Implement your validation logic here if needed
+  const handleSubmit = async () => {
+    // const res = await Axios.get(
+    //   `http://127.0.0.1:3000/api/v1/servers/companies/${uniqueId}`
+    // );
     onSubmit(values);
     onClose();
     window.location.reload();
@@ -384,6 +393,7 @@ export const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
           <Grid item xs={4}>
             <InputLabel>Maximum License</InputLabel>
             <Input
+              type="number"
               value={values.maxLicense}
               onChange={(e) =>
                 setValues({ ...values, maxLicense: e.target.value })
@@ -406,7 +416,9 @@ export const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
 // Edit Modal
 export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
   const [editedValues, setEditedValues] = useState(values);
-
+  const { uniqueId } = useParams();
+  console.log("values :", values.id);
+  console.log("Model :", uniqueId);
   useEffect(() => {
     // Update editedValues when values change (initially and on subsequent edits)
     setEditedValues(values);
@@ -414,13 +426,18 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
 
   const handleEditSubmit = async () => {
     // Implement your validation logic here if needed
-    onSubmit(editedValues);
+    // console.log("VALUES : ", editedValues.id);
+    const res = await Axios.patch(
+      `http://127.0.0.1:3000/api/v1/servers/company/${uniqueId}/${values.id}`,
+      editedValues
+    );
+    onSubmit(res);
     onClose();
   };
 
   return (
     <Dialog open={open}>
-      <DialogTitle>Edit Server</DialogTitle>
+      <DialogTitle>Edit Company</DialogTitle>
       <DialogContent>
         <Grid container spacing={2}>
           <Grid item xs={4}>
@@ -459,7 +476,13 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
           <Grid item xs={4}>
             <InputLabel>Address-Line-1</InputLabel>
             <Input
-              value={editedValues.addressLine1}
+              value={
+                editedValues &&
+                editedValues.addressId &&
+                editedValues.addressId.addressLine1
+                  ? editedValues.addressId.addressLine1
+                  : ""
+              }
               onChange={(e) =>
                 setEditedValues({
                   ...editedValues,
@@ -473,7 +496,13 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
           <Grid item xs={4}>
             <InputLabel>Address-Line-2</InputLabel>
             <Input
-              value={editedValues.addressLine2}
+              value={
+                editedValues &&
+                editedValues.addressId &&
+                editedValues.addressId.addressLine2
+                  ? editedValues.addressId.addressLine2
+                  : ""
+              }
               onChange={(e) =>
                 setEditedValues({
                   ...editedValues,
@@ -487,7 +516,13 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
           <Grid item xs={4}>
             <InputLabel>State</InputLabel>
             <Input
-              value={editedValues.state}
+              value={
+                editedValues &&
+                editedValues.addressId &&
+                editedValues.addressId.state
+                  ? editedValues.addressId.state
+                  : ""
+              }
               onChange={(e) =>
                 setEditedValues({ ...editedValues, state: e.target.value })
               }
@@ -498,7 +533,13 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
           <Grid item xs={4}>
             <InputLabel>City</InputLabel>
             <Input
-              value={editedValues.city}
+              value={
+                editedValues &&
+                editedValues.addressId &&
+                editedValues.addressId.city
+                  ? editedValues.addressId.city
+                  : ""
+              }
               onChange={(e) =>
                 setEditedValues({ ...editedValues, city: e.target.value })
               }
@@ -509,7 +550,13 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
           <Grid item xs={4}>
             <InputLabel>Country</InputLabel>
             <Input
-              value={editedValues.country}
+              value={
+                editedValues &&
+                editedValues.addressId &&
+                editedValues.addressId.country
+                  ? editedValues.addressId.country
+                  : ""
+              }
               onChange={(e) =>
                 setEditedValues({ ...editedValues, country: e.target.value })
               }
@@ -520,7 +567,13 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
           <Grid item xs={4}>
             <InputLabel>Pincode</InputLabel>
             <Input
-              value={editedValues.pinCode}
+              value={
+                editedValues &&
+                editedValues.addressId &&
+                editedValues.addressId.pinCode
+                  ? editedValues.addressId.pinCode
+                  : ""
+              }
               onChange={(e) =>
                 setEditedValues({ ...editedValues, pinCode: e.target.value })
               }
@@ -528,7 +581,7 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
             />
           </Grid>
 
-          <Grid item xs={4}>
+          {/* <Grid item xs={4}>
             <InputLabel>Tax-Type</InputLabel>
             <Input
               value={editedValues.taxType}
@@ -549,10 +602,12 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
               fullWidth
             />
           </Grid>
+           */}
 
           <Grid item xs={4}>
             <InputLabel>Maximum License</InputLabel>
             <Input
+              type="number"
               value={editedValues.maxLicense}
               onChange={(e) =>
                 setEditedValues({ ...editedValues, maxLicense: e.target.value })
@@ -564,7 +619,14 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button color="primary" onClick={handleEditSubmit} variant="contained">
+        <Button
+          color="primary"
+          onClick={() => {
+            handleEditSubmit();
+            onClose();
+          }}
+          variant="contained"
+        >
           Save Changes
         </Button>
       </DialogActions>

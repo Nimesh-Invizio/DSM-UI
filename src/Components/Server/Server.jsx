@@ -88,14 +88,24 @@ const Server = () => {
     }
   };
 
+  const getAllServer = async () => {
+    console.log("SELECTED :", selectedRow);
+    try {
+      const response = await Axios.get("http://localhost:3000/api/v1/servers/");
+      setTableData(response.data.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
   const handleEditRow = async (row) => {
     try {
+      setSelectedRow(row);
       // Get updated data from the server
-      const response = await Axios.put(
-        `http://localhost:3000/api/v1/servers/${row.uniqueId}`,
-        row
+      const response = await Axios.get(
+        `http://localhost:3000/api/v1/servers/${row.uniqueId}`
       );
-      // console.log(response);
+      console.log(response);
 
       // Update state with the updated data
       if (response && response.data && response.data.data) {
@@ -254,7 +264,7 @@ const Server = () => {
           <EditServerModal
             open={editModalOpen}
             onClose={() => setEditModalOpen(false)}
-            onSubmit={handleEditRow}
+            onSubmit={getAllServer}
             values={editModalValues}
           />
           <LoginDetailsDialog
@@ -362,7 +372,11 @@ export const EditServerModal = ({ open, onClose, onSubmit, values }) => {
 
   const handleEditSubmit = async () => {
     // Implement your validation logic here if needed
-    onSubmit(editedValues);
+    const res = await Axios.put(
+      `http://localhost:3000/api/v1/servers/${values.uniqueId}`,
+      editedValues
+    );
+    onSubmit(res.data.data);
     onClose();
   };
 
@@ -415,7 +429,14 @@ export const EditServerModal = ({ open, onClose, onSubmit, values }) => {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button color="primary" onClick={handleEditSubmit} variant="contained">
+        <Button
+          color="primary"
+          onClick={() => {
+            handleEditSubmit();
+            onClose();
+          }}
+          variant="contained"
+        >
           Save Changes
         </Button>
       </DialogActions>
