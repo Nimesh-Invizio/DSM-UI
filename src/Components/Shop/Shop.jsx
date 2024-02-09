@@ -53,7 +53,7 @@ function Shop() {
     const fetchData = async () => {
       try {
         const response = await Axios.get(
-          `http://127.0.0.1:3000/api/v1/servers/shop/${uniqueId}/${id}`
+          `http://127.0.0.1:8183/api/v1/servers/shop/${uniqueId}/${id}`
         );
         setTableData(response.data.data.data);
       } catch (error) {
@@ -67,7 +67,7 @@ function Shop() {
   const getAllShop = async () => {
     try {
       const response = await Axios.get(
-        `http://127.0.0.1:3000/api/v1/servers/shop/${uniqueId}/${id}`
+        `http://127.0.0.1:8183/api/v1/servers/shop/${uniqueId}/${id}`
       );
       setTableData(response.data.data.data);
     } catch (error) {
@@ -78,7 +78,7 @@ function Shop() {
   const handleCreateNewRow = async (values) => {
     try {
       const response = await Axios.post(
-        `http://127.0.0.1:3000/api/v1/servers/shop/${uniqueId}`,
+        `http://127.0.0.1:8183/api/v1/servers/shop/${uniqueId}`,
         values
       );
       setTableData([...tableData, response.data]);
@@ -92,7 +92,7 @@ function Shop() {
   const handleEditRow = async (row) => {
     try {
       const response = await Axios.get(
-        `http://127.0.0.1:3000/api/v1/servers/singleshop/${uniqueId}/${row.id}`,
+        `http://127.0.0.1:8183/api/v1/servers/singleshop/${uniqueId}/${row.id}`,
         row
       );
 
@@ -122,7 +122,7 @@ function Shop() {
 
     try {
       await Axios.delete(
-        `http://127.0.0.1:3000/api/v1/servers/deleteshop/${uniqueId}/${row.id}`
+        `http://127.0.0.1:8183/api/v1/servers/deleteshop/${uniqueId}/${row.id}`
       );
       const updatedTableData = [...tableData];
       updatedTableData.splice(row.index, 1);
@@ -532,7 +532,7 @@ export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
   const handleEditSubmit = async () => {
     // Implement your validation logic here if needed
     const res = await Axios.patch(
-      `http://127.0.0.1:3000/api/v1/servers/shop/${uniqueId}/${values.id}`,
+      `http://127.0.0.1:8183/api/v1/servers/shop/${uniqueId}/${values.id}`,
       editedValues
     );
     onSubmit(res);

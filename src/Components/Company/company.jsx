@@ -56,7 +56,7 @@ function Company() {
     const fetchData = async () => {
       try {
         const response = await Axios.get(
-          `http://127.0.0.1:3000/api/v1/servers/companies/${uniqueId}`
+          `http://127.0.0.1:8183/api/v1/servers/companies/${uniqueId}`
         );
         setTableData(response.data.data);
       } catch (error) {
@@ -70,7 +70,7 @@ function Company() {
   const getAllCompany = async () => {
     try {
       const response = await Axios.get(
-        `http://127.0.0.1:3000/api/v1/servers/companies/${uniqueId}`
+        `http://127.0.0.1:8183/api/v1/servers/companies/${uniqueId}`
       );
       setTableData(response.data.data);
     } catch (error) {
@@ -81,7 +81,7 @@ function Company() {
   const handleCreateNewRow = async (values) => {
     try {
       const response = await Axios.post(
-        `http://127.0.0.1:3000/api/v1/servers/company/${uniqueId}`,
+        `http://127.0.0.1:8183/api/v1/servers/company/${uniqueId}`,
         values
       );
       setTableData([...tableData, response.data]);
@@ -96,7 +96,7 @@ function Company() {
   const handleEditRow = async (row) => {
     try {
       const response = await Axios.get(
-        `http://127.0.0.1:3000/api/v1/servers/singleComp/${uniqueId}/${row.id}`,
+        `http://127.0.0.1:8183/api/v1/servers/singleComp/${uniqueId}/${row.id}`,
         row
       );
 
@@ -121,7 +121,7 @@ function Company() {
 
     try {
       await Axios.delete(
-        `http://127.0.0.1:3000/api/v1/servers/deletecompany/${uniqueId}/${row.id}`
+        `http://127.0.0.1:8183/api/v1/servers/deletecompany/${uniqueId}/${row.id}`
       );
       const updatedTableData = [...tableData];
       updatedTableData.splice(row.index, 1);
@@ -285,7 +285,7 @@ export const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
 
   const handleSubmit = async () => {
     // const res = await Axios.get(
-    //   `http://127.0.0.1:3000/api/v1/servers/companies/${uniqueId}`
+    //   `http://127.0.0.1:8183/api/v1/servers/companies/${uniqueId}`
     // );
     onSubmit(values);
     onClose();
@@ -460,7 +460,7 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
 
   const handleEditSubmit = async () => {
     const res = await Axios.patch(
-      `http://127.0.0.1:3000/api/v1/servers/company/${uniqueId}/${values.id}`,
+      `http://127.0.0.1:8183/api/v1/servers/company/${uniqueId}/${values.id}`,
       editedValues
     );
     onSubmit(res);
