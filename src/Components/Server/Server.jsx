@@ -129,7 +129,7 @@ const Server = () => {
 
   const handleLogin = (values) => {
     console.log(values);
-    const apiUrl = `http://127.0.0.1:8183/api/v1/servers/diva/login?uniqueId=${selectedRow.uniqueId}`;
+    const apiUrl = `http://101.53.133.52:8183/api/v1/servers/diva/login?uniqueId=${selectedRow.uniqueId}`;
     console.log(apiUrl);
     Axios.post(apiUrl, values)
       .then((response) => {
