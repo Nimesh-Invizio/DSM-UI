@@ -175,10 +175,15 @@ const Server = () => {
         <Sidenav />
         <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
           <Button
-            color="primary"
             onClick={() => setCreateModalOpen(true)}
             variant="contained"
-            sx={{ ml: "auto", display: "flex", justifyContent: "flex-end" }}
+            sx={{
+              ml: "auto",
+              display: "flex",
+              justifyContent: "flex-end",
+              background: "#6FC276",
+              color: "white",
+            }}
           >
             + Add Server
           </Button>
@@ -191,7 +196,7 @@ const Server = () => {
                       <TableCell
                         key={column.accessorKey}
                         style={{
-                          background: "#1976d2",
+                          background: "#6FC276",
                           color: "white",
                           fontSize: "20px",
                           textAlign: "center",
@@ -202,7 +207,7 @@ const Server = () => {
                     ))}
                     <TableCell
                       style={{
-                        background: "#1976d2",
+                        background: "#6FC276",
                         color: "white",
                         fontSize: "20px",
                         textAlign: "center",
@@ -352,8 +357,15 @@ export const CreateNewServerModal = ({ open, onClose, onSubmit }) => {
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button color="primary" onClick={handleSubmit} variant="contained">
+        <Button onClick={onClose} sx={{ color: "#6FC276" }}>
+          Cancel
+        </Button>
+        <Button
+          color="primary"
+          onClick={handleSubmit}
+          variant="contained"
+          sx={{ background: "#6FC276", color: "white" }}
+        >
           Create
         </Button>
       </DialogActions>
@@ -428,7 +440,9 @@ export const EditServerModal = ({ open, onClose, onSubmit, values }) => {
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose} sx={{ color: "#6FC276" }}>
+          Cancel
+        </Button>
         <Button
           color="primary"
           onClick={() => {
@@ -436,6 +450,7 @@ export const EditServerModal = ({ open, onClose, onSubmit, values }) => {
             onClose();
           }}
           variant="contained"
+          sx={{ background: "#6FC276", color: "white" }}
         >
           Save Changes
         </Button>
@@ -496,8 +511,15 @@ export const LoginDetailsDialog = ({
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button color="primary" variant="contained" onClick={handleLogin}>
+        <Button onClick={onClose} sx={{ color: "#6FC276" }}>
+          Cancel
+        </Button>
+        <Button
+          color="primary"
+          variant="contained"
+          onClick={handleLogin}
+          sx={{ background: "#6FC276", color: "white" }}
+        >
           Login
         </Button>
       </DialogActions>

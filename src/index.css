@@ -18,7 +18,7 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: url('./Components/Assests/bg.jpg');
+  /* background: url('./Components/Assests/bg.jpg'); */
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
@@ -32,7 +32,7 @@ code {
 
 .wrapper {
   width: 420px;
-  background: slateblue;
+  background: #6FC276;
   color: #fff;
   right: 70%;
   border-radius: 10px;

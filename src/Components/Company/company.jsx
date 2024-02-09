@@ -22,7 +22,7 @@ import {
   Input,
   InputLabel,
 } from "@mui/material";
-import { FaPencilAlt } from "react-icons/fa";
+import { FaPencilAlt, FaTrash } from "react-icons/fa";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { ConstructionOutlined } from "@mui/icons-material";
 
@@ -114,6 +114,23 @@ function Company() {
     }
   };
 
+  const handleDeleteRow = async (row) => {
+    if (!window.confirm(`Are you sure you want to delete ID: ${row.id}`)) {
+      return;
+    }
+
+    try {
+      await Axios.delete(
+        `http://127.0.0.1:3000/api/v1/servers/deletecompany/${uniqueId}/${row.id}`
+      );
+      const updatedTableData = [...tableData];
+      updatedTableData.splice(row.index, 1);
+      setTableData(updatedTableData);
+    } catch (error) {
+      console.error("Error deleting row:", error);
+    }
+  };
+
   const columns = useMemo(
     () => [
       // Define your columns as per your data structure
@@ -137,7 +154,13 @@ function Company() {
           <Button
             color="primary"
             variant="contained"
-            sx={{ ml: "auto", display: "flex", justifyContent: "flex-end" }}
+            sx={{
+              ml: "auto",
+              display: "flex",
+              justifyContent: "flex-end",
+              background: "#6FC276",
+              color: "white",
+            }}
             onClick={() => setCreateModalOpen(true)}
           >
             + Add Company
@@ -152,7 +175,7 @@ function Company() {
                       <TableCell
                         key={column.accessorKey}
                         style={{
-                          background: "#1976d2",
+                          background: "#6FC276",
                           color: "white",
                           fontSize: "20px",
                           textAlign: "center",
@@ -163,7 +186,7 @@ function Company() {
                     ))}
                     <TableCell
                       style={{
-                        background: "#1976d2",
+                        background: "#6FC276",
                         color: "white",
                         fontSize: "20px",
                         textAlign: "center",
@@ -188,8 +211,9 @@ function Company() {
                         ))}
                         <TableCell style={{ textAlign: "center" }}>
                           <Button
-                            variant="outlined"
+                            variant="contained"
                             size="small"
+                            sx={{ background: "#6FC276", color: "white" }}
                             onClick={() =>
                               navigate(
                                 `/server/company/shop/${uniqueId}/${row.id}`
@@ -200,6 +224,9 @@ function Company() {
                           </Button>
                           <IconButton onClick={() => handleEditRow(row)}>
                             <FaPencilAlt></FaPencilAlt>
+                          </IconButton>
+                          <IconButton onClick={() => handleDeleteRow(row)}>
+                            <FaTrash></FaTrash>
                           </IconButton>
                         </TableCell>
                       </TableRow>
@@ -404,8 +431,15 @@ export const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button color="primary" onClick={handleSubmit} variant="contained">
+        <Button onClick={onClose} sx={{ color: "#6FC276" }}>
+          Cancel
+        </Button>
+        <Button
+          color="primary"
+          onClick={handleSubmit}
+          variant="contained"
+          sx={{ background: "#6FC276", color: "white" }}
+        >
           Create
         </Button>
       </DialogActions>
@@ -417,7 +451,7 @@ export const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
 export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
   const [editedValues, setEditedValues] = useState(values);
   const { uniqueId } = useParams();
-  console.log("values :", values.id);
+  // console.log("values :", values.id);
   console.log("Model :", uniqueId);
   useEffect(() => {
     // Update editedValues when values change (initially and on subsequent edits)
@@ -425,8 +459,6 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
   }, [values]);
 
   const handleEditSubmit = async () => {
-    // Implement your validation logic here if needed
-    // console.log("VALUES : ", editedValues.id);
     const res = await Axios.patch(
       `http://127.0.0.1:3000/api/v1/servers/company/${uniqueId}/${values.id}`,
       editedValues
@@ -618,7 +650,9 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose} sx={{ color: "#6FC276" }}>
+          Cancel
+        </Button>
         <Button
           color="primary"
           onClick={() => {
@@ -626,6 +660,7 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
             onClose();
           }}
           variant="contained"
+          sx={{ background: "#6FC276", color: "white" }}
         >
           Save Changes
         </Button>
