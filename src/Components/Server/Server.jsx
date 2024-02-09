@@ -47,7 +47,7 @@ const Server = () => {
     const fetchData = async () => {
       try {
         const response = await Axios.get(
-          "http://localhost:8183/api/v1/servers/"
+          "http://101.53.133.52:8183/api/v1/servers/"
         );
         setTableData(response.data.data);
         // let serverIds = response.data.data.map(element => element.uniqueId);
@@ -76,7 +76,7 @@ const Server = () => {
   const handleCreateNewRow = async (values) => {
     try {
       const response = await Axios.post(
-        "http://localhost:8183/api/v1/servers/",
+        "http://101.53.133.52:8183/api/v1/servers/",
         values
       );
       setTableData([...tableData, response.data]);
@@ -91,7 +91,7 @@ const Server = () => {
   const getAllServer = async () => {
     console.log("SELECTED :", selectedRow);
     try {
-      const response = await Axios.get("http://localhost:8183/api/v1/servers/");
+      const response = await Axios.get("http://101.53.133.52:8183/api/v1/servers/");
       setTableData(response.data.data);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -103,7 +103,7 @@ const Server = () => {
       setSelectedRow(row);
       // Get updated data from the server
       const response = await Axios.get(
-        `http://localhost:8183/api/v1/servers/${row.uniqueId}`
+        `http://101.53.133.52:8183/api/v1/servers/${row.uniqueId}`
       );
       console.log(response);
 
@@ -150,7 +150,7 @@ const Server = () => {
 
     try {
       await Axios.delete(
-        `http://localhost:8183/api/v1/servers/${row.uniqueId}`
+        `http://101.53.133.52:8183/api/v1/servers/${row.uniqueId}`
       );
       const updatedTableData = [...tableData];
       updatedTableData.splice(row.index, 1);
@@ -385,7 +385,7 @@ export const EditServerModal = ({ open, onClose, onSubmit, values }) => {
   const handleEditSubmit = async () => {
     // Implement your validation logic here if needed
     const res = await Axios.put(
-      `http://localhost:8183/api/v1/servers/${values.uniqueId}`,
+      `http://101.53.133.52:8183/api/v1/servers/${values.uniqueId}`,
       editedValues
     );
     onSubmit(res.data.data);
