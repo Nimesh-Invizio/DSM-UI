@@ -12,7 +12,7 @@ function LoginForm() {
     e.preventDefault();
     try {
       const res = await axios.post(
-        "http://101.53.133.52:8183/api/v1/auth/login",
+        "http://localhost:8070/api/v1/auth/login",
         values
       );
       // Assuming the response contains a token upon successful login

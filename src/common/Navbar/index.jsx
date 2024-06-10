@@ -13,7 +13,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import MoreIcon from "@mui/icons-material/MoreVert";
-import { useAppStore } from "../AppStore";
+import { useAppStore } from "../../AppStore";
 import { FaSignOutAlt, FaUser } from "react-icons/fa";
 
 const AppBar = styled(MuiAppBar, {

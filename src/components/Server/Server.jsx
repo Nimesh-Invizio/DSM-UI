@@ -24,9 +24,9 @@ import {
 import { FaPencilAlt, FaPlus, FaTrash } from "react-icons/fa";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { Link } from "react-router-dom";
-import Navbar from "../Navbar";
-import Sidenav from "../Sidenav";
-import GetData from "../../Utils/utility";
+import Navbar from "../../common/Navbar";
+import Sidenav from "../../common/SideNav";
+import GetData from "../../utils/utility";
 import { useNavigate } from "react-router-dom";
 
 const Server = () => {
@@ -47,7 +47,7 @@ const Server = () => {
     const fetchData = async () => {
       try {
         const response = await Axios.get(
-          "http://101.53.133.52:8183/api/v1/servers/"
+          "http://localhost:8070/api/v1/servers/"
         );
         setTableData(response.data.data);
         // let serverIds = response.data.data.map(element => element.uniqueId);
@@ -76,7 +76,7 @@ const Server = () => {
   const handleCreateNewRow = async (values) => {
     try {
       const response = await Axios.post(
-        "http://101.53.133.52:8183/api/v1/servers/",
+        "http://localhost:8070/api/v1/servers/",
         values
       );
       setTableData([...tableData, response.data]);
@@ -91,7 +91,7 @@ const Server = () => {
   const getAllServer = async () => {
     console.log("SELECTED :", selectedRow);
     try {
-      const response = await Axios.get("http://101.53.133.52:8183/api/v1/servers/");
+      const response = await Axios.get("http://localhost:8070/api/v1/servers/");
       setTableData(response.data.data);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -103,7 +103,7 @@ const Server = () => {
       setSelectedRow(row);
       // Get updated data from the server
       const response = await Axios.get(
-        `http://101.53.133.52:8183/api/v1/servers/${row.uniqueId}`
+        `http://localhost:8070/api/v1/servers/${row.uniqueId}`
       );
       console.log(response);
 
@@ -129,7 +129,7 @@ const Server = () => {
 
   const handleLogin = (values) => {
     console.log(values);
-    const apiUrl = `http://101.53.133.52:8183/api/v1/servers/diva/login?uniqueId=${selectedRow.uniqueId}`;
+    const apiUrl = `http://localhost:8070/api/v1/servers/diva/login?uniqueId=${selectedRow.uniqueId}`;
     console.log(apiUrl);
     Axios.post(apiUrl, values)
       .then((response) => {
@@ -150,7 +150,7 @@ const Server = () => {
 
     try {
       await Axios.delete(
-        `http://101.53.133.52:8183/api/v1/servers/${row.uniqueId}`
+        `http://localhost:8070/api/v1/servers/${row.uniqueId}`
       );
       const updatedTableData = [...tableData];
       updatedTableData.splice(row.index, 1);
@@ -385,7 +385,7 @@ export const EditServerModal = ({ open, onClose, onSubmit, values }) => {
   const handleEditSubmit = async () => {
     // Implement your validation logic here if needed
     const res = await Axios.put(
-      `http://101.53.133.52:8183/api/v1/servers/${values.uniqueId}`,
+      `http://localhost:8070/api/v1/servers/${values.uniqueId}`,
       editedValues
     );
     onSubmit(res.data.data);

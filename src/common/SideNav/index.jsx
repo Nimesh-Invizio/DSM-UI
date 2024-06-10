@@ -15,7 +15,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import InboxIcon from '@mui/icons-material/MoveToInbox';
 import {useNavigate} from 'react-router-dom'
-import { useAppStore } from '../AppStore';
+import { useAppStore } from '../../AppStore';
 import { SevereCold, StorageOutlined } from '@mui/icons-material';
 import { FaServer, FaStore, FaUser, FaUserCircle } from 'react-icons/fa';
 
@@ -130,6 +130,27 @@ export default function Sidenav() {
               </ListItemButton>
             </ListItem>
             {/* </Link> */}
+
+            <ListItem disablePadding sx={{ display: 'block' }} onClick={() => {navigate("/shop")}}>
+              <ListItemButton
+                sx={{
+                  minHeight: 48,
+                  justifyContent: open ? 'initial' : 'center',
+                  px: 2.5,
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: open ? 3 : 'auto',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <FaStore />
+                </ListItemIcon>
+                <ListItemText primary="Shop" sx={{ opacity: open ? 1 : 0 }} />
+              </ListItemButton>
+            </ListItem>
         </List>
         </Drawer>
     </Box>

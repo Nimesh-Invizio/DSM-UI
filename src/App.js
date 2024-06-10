@@ -1,24 +1,37 @@
+import React, { useState } from "react";
 import "./App.css";
-import { Routes, Route } from "react-router-dom";
-import Login from "./Components/Login/Login";
-import Server from "./Components/Server/Server";
-import User from "./Components/User/User";
-import Company from "./Components/Company/company";
-import Shop from "./Components/Shop/Shop";
+import { Routes, Route, Navigate } from "react-router-dom";
+import Login from "./components/Login/Login";
+import Server from "./components/Server/Server";
+import User from "./components/User/User";
+import Company from "./components/Company/company";
+import Shops from "./components/Shop/Shop";
+import Shop from "./pages/shop";
+import Sidenav from "./common/Sidenav";
+import Navbar from "./common/Navbar";
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+  };
+
   return (
     <div className="App">
+      <Navbar isLoggedIn={isLoggedIn} onLogout={handleLogout} />
+      {isLoggedIn && <Sidenav />}
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/server" exact element={<Server />} />
-        <Route path="/server/company/:uniqueId" exact element={<Company />} />
-        <Route
-          path="/server/company/shop/:uniqueId/:id"
-          exact
-          element={<Shop />}
-        />
-        <Route path="/user" exact element={<User />} />
+        <Route path="/" element={isLoggedIn ? <Navigate to="/server" /> : <Login onLogin={handleLogin} />} />
+        <Route path="/server" element={isLoggedIn ? <Server /> : <Navigate to="/" />} />
+        <Route path="/server/company/:uniqueId" element={isLoggedIn ? <Company /> : <Navigate to="/" />} />
+        <Route path="/server/company/shop/:uniqueId/:id" element={isLoggedIn ? <Shops /> : <Navigate to="/" />} />
+        <Route path="/user" element={isLoggedIn ? <User /> : <Navigate to="/" />} />
+        <Route path="/shop" element={isLoggedIn ? <Shop /> : <Navigate to="/" />} />
       </Routes>
     </div>
   );

@@ -1,5 +1,5 @@
-import Sidenav from "../Sidenav";
-import Navbar from "../Navbar";
+import Sidenav from "../../common/SideNav";
+import Navbar from "../../common/Navbar";
 import React, { useCallback, useMemo, useState, useEffect } from "react";
 import Axios from "axios";
 import {
@@ -26,7 +26,7 @@ import {
 import { FaPencilAlt, FaPlus, FaTrash } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 
-function Shop() {
+function Shops() {
   const [tableData, setTableData] = useState([]);
   const { uniqueId, id } = useParams();
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -53,7 +53,7 @@ function Shop() {
     const fetchData = async () => {
       try {
         const response = await Axios.get(
-          `http://101.53.133.52:8183/api/v1/servers/shop/${uniqueId}/${id}`
+          `http://localhost:8070/api/v1/servers/shop/${uniqueId}/${id}`
         );
         setTableData(response.data.data.data);
       } catch (error) {
@@ -67,7 +67,7 @@ function Shop() {
   const getAllShop = async () => {
     try {
       const response = await Axios.get(
-        `http://101.53.133.52:8183/api/v1/servers/shop/${uniqueId}/${id}`
+        `http://localhost:8070/api/v1/servers/shop/${uniqueId}/${id}`
       );
       setTableData(response.data.data.data);
     } catch (error) {
@@ -78,7 +78,7 @@ function Shop() {
   const handleCreateNewRow = async (values) => {
     try {
       const response = await Axios.post(
-        `http://101.53.133.52:8183/api/v1/servers/shop/${uniqueId}`,
+        `http://localhost:8070/api/v1/servers/shop/${uniqueId}`,
         values
       );
       setTableData([...tableData, response.data]);
@@ -92,7 +92,7 @@ function Shop() {
   const handleEditRow = async (row) => {
     try {
       const response = await Axios.get(
-        `http://101.53.133.52:8183/api/v1/servers/singleshop/${uniqueId}/${row.id}`,
+        `http://localhost:8070/api/v1/servers/singleshop/${uniqueId}/${row.id}`,
         row
       );
 
@@ -122,7 +122,7 @@ function Shop() {
 
     try {
       await Axios.delete(
-        `http://101.53.133.52:8183/api/v1/servers/deleteshop/${uniqueId}/${row.id}`
+        `http://localhost:8070/api/v1/servers/deleteshop/${uniqueId}/${row.id}`
       );
       const updatedTableData = [...tableData];
       updatedTableData.splice(row.index, 1);
@@ -532,7 +532,7 @@ export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
   const handleEditSubmit = async () => {
     // Implement your validation logic here if needed
     const res = await Axios.patch(
-      `http://101.53.133.52:8183/api/v1/servers/shop/${uniqueId}/${values.id}`,
+      `http://localhost:8070/api/v1/servers/shop/${uniqueId}/${values.id}`,
       editedValues
     );
     onSubmit(res);
@@ -789,4 +789,4 @@ export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
   );
 };
 
-export default Shop;
+export default Shops;
