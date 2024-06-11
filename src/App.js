@@ -7,11 +7,11 @@ import User from "./components/User/User";
 import Company from "./components/Company/company";
 import Shops from "./components/Shop/Shop";
 import Shop from "./pages/shop";
-import Sidenav from "./common/Sidenav";
+import Sidenav from "./common/SideNav";
 import Navbar from "./common/Navbar";
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
 
   const handleLogin = () => {
     setIsLoggedIn(true);
