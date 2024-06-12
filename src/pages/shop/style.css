@@ -8,5 +8,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
+}
 
+.shop-quotation{
+  background-color: #000000;
+  border-radius: 2px solid red;
 }

@@ -21,7 +21,7 @@ const Header = () => {
             label="Action Type"
             onChange={handleChange}
             sx={{
-              width:200
+              width:200,
             }}
           >
             <MenuItem value={10}>Shop Features</MenuItem>
