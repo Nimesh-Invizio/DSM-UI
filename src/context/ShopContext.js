@@ -1,18 +1,11 @@
 import { createContext, useReducer } from "react";
+import { shopReducer } from "./Reducers";
+
 
 // Define the initial state
 const initialState = {
-  shopId: [],
-};
+  shopIds: [],
 
-// Define the reducer function
-const shopReducer = (state, action) => {
-  switch (action.type) {
-    case "SET_SHOP_ID":
-      return { ...state, shopId: action.payload };
-    default:
-      return state;
-  }
 };
 
 // Create the context
@@ -20,20 +13,14 @@ export const ShopContext = createContext(initialState);
 
 // Create the context provider
 export const ShopProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(shopReducer, initialState);
+  const [shopState, shopDispatch] = useReducer(shopReducer, initialState);
 
   // Define the action creators
   const setShopId = (shopId) => {
-    dispatch({ type: "SET_SHOP_ID", payload: shopId });
-  };
-
-  // Provide the state and action creators to the context
-  const value = {
-    shopId: state.shopId,
-    setShopId,
+    shopDispatch({ type: "GET_SHOP_IDS", payload: shopId });
   };
 
   return (
-    <ShopContext.Provider value={value}>{children}</ShopContext.Provider>
+    <ShopContext.Provider value={{shopState,shopDispatch}}>{children}</ShopContext.Provider>
   );
 };

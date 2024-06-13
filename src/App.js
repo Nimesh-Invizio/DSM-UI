@@ -9,6 +9,7 @@ import Shops from "./components/Shop/Shop";
 import Shop from "./pages/shop";
 import Sidenav from "./common/SideNav";
 import Navbar from "./common/Navbar";
+import Devices from "./pages/device";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(true);
@@ -31,7 +32,9 @@ function App() {
         <Route path="/server/company/:uniqueId" element={isLoggedIn ? <Company /> : <Navigate to="/" />} />
         <Route path="/server/company/shop/:uniqueId/:id" element={isLoggedIn ? <Shops /> : <Navigate to="/" />} />
         <Route path="/user" element={isLoggedIn ? <User /> : <Navigate to="/" />} />
-        <Route path="/shop" element={isLoggedIn ? <Shop /> : <Navigate to="/" />} />
+        <Route path="/shops" element={isLoggedIn ? <Shop /> : <Navigate to="/" />} />
+        <Route path="/devices" element={isLoggedIn ? <Devices /> : <Navigate to="/" />} />
+
       </Routes>
     </div>
   );

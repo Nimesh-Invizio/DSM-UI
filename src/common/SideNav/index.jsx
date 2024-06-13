@@ -17,7 +17,7 @@ import InboxIcon from '@mui/icons-material/MoveToInbox';
 import {useNavigate} from 'react-router-dom'
 import { useAppStore } from '../../AppStore';
 import { SevereCold, StorageOutlined } from '@mui/icons-material';
-import { FaServer, FaStore, FaUser, FaUserCircle } from 'react-icons/fa';
+import { FaMobile, FaServer, FaStore, FaUser, FaUserCircle } from 'react-icons/fa';
 
 const drawerWidth = 240;
 
@@ -131,7 +131,7 @@ export default function Sidenav() {
             </ListItem>
             {/* </Link> */}
 
-            <ListItem disablePadding sx={{ display: 'block' }} onClick={() => {navigate("/shop")}}>
+            <ListItem disablePadding sx={{ display: 'block' }} onClick={() => {navigate("/shops")}}>
               <ListItemButton
                 sx={{
                   minHeight: 48,
@@ -149,6 +149,27 @@ export default function Sidenav() {
                   <FaStore />
                 </ListItemIcon>
                 <ListItemText primary="Shop" sx={{ opacity: open ? 1 : 0 }} />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding sx={{ display: 'block' }} onClick={() => {navigate("/devices")}}>
+              <ListItemButton
+                sx={{
+                  minHeight: 48,
+                  justifyContent: open ? 'initial' : 'center',
+                  px: 2.5,
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: open ? 3 : 'auto',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <FaMobile />
+                </ListItemIcon>
+                <ListItemText primary="Devices" sx={{ opacity: open ? 1 : 0 }} />
               </ListItemButton>
             </ListItem>
         </List>

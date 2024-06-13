@@ -1,10 +1,10 @@
-import { api } from './api.setup';
+import { api } from '../../../utils/api.setup';
 
 const apiContract = {
-  deleteQuotations: async (serverId, shopId) => {
+  deleteQuotations: async (serverId, shopId,data) => {
     try {
-      const response = await api.delete(`/${serverId}/shops/${shopId}/quotations-delete`);
-      return response.data;
+      const response = await api.post(`servers/${serverId}/shops/${shopId}/quotations-delete`,data);
+      return {status:response?.status || 500,message:response?.data?.message || '',data:response?.data?.data || []};
     } catch (error) {
       throw new Error(error.response ? error.response.data : error.message);
     }

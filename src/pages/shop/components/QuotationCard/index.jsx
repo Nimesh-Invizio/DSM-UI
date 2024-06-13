@@ -4,20 +4,34 @@ import { Box, InputLabel, MenuItem, Paper, Select, Typography, FormControl, Swit
 import React, { useState, useEffect, useContext } from 'react';
 import { DatePicker } from 'antd';
 import { ShopContext } from '../../../../context/ShopContext';
+import apiContract from '../../services/shop.service';
+import SnackAlert from '../../../../common/SnackAlert';
 
 const QuotationCard = () => {
-    const [itemStatus, setItemStatus] = useState('');
+    const [itemStatus, setItemStatus] = useState([]);
     const [shops, setShops] = useState('');
     const [hardDelete, setHardDelete] = useState(false);
     const [imageDelete, setImageDelete] = useState(false);
     const [date, setDate] = useState(null);
     const [formErrors, setFormErrors] = useState({});
+    const [deleteQuotations,setDeletQuotations] = useState({});
+    const [snackBarStatus,setSnackBarStatus] = useState(false);
 
-    const shop  = useContext(ShopContext);
-    console.log(shop,"wqdesfawq");
+    const shop = useContext(ShopContext);
 
-    const handleChange = (event) => {
-        setItemStatus(event.target.value);
+
+    const handleChangeItemStatus = (event) => {
+        const value = event.target.value.toUpperCase();
+    
+        if (value === "ALL") {
+            setItemStatus(["", "INSTOCK", "CATALOGUE"]);
+        } 
+        else if (value === "APP"){
+            setItemStatus([""]);
+        }
+         else {
+            setItemStatus([value]);
+        }
     };
 
     const handleChangeShops = (event) => {
@@ -36,11 +50,9 @@ const QuotationCard = () => {
         setDate(date);
     };
 
-    const handleSave = (event) => {
-        // Reset form errors
+    const handleSave = async (event) => {
         setFormErrors({});
 
-        // Validate form data
         const errors = {};
         if (!shops) {
             errors.shops = 'Please select a shop';
@@ -52,14 +64,31 @@ const QuotationCard = () => {
             errors.date = 'Please select a date';
         }
 
-        // If there are errors, set them in state and return
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
             return;
         }
 
-        // If form data is valid, perform save logic here
-        // ...
+        try {
+            const serverId = 'af92ccfb-ea3c-40f7-b9bc-0f5d055c763c';
+            const shopId = shops;
+            let dataObj = {
+                shopId,
+                date,
+                itemStatus:itemStatus.map(element => element === "All" ? element = "" : element),
+                hardDelete,
+                imageDelete
+            }
+            
+            const response = await apiContract.deleteQuotations(serverId, shopId, dataObj);
+            setSnackBarStatus(!snackBarStatus);
+            setDeletQuotations(response);
+
+
+        } catch (error) {
+            // Handle the error here
+            console.error('Error deleting quotations:', error);
+        }
 
         // Clear form after successful save
         handleClear();
@@ -74,7 +103,6 @@ const QuotationCard = () => {
     };
 
     useEffect(() => {
-        // Reset form errors when form values change
         setFormErrors({});
     }, [shops, itemStatus, date]);
 
@@ -85,7 +113,8 @@ const QuotationCard = () => {
             margin: 'auto',
             maxWidth: 800,
             padding: 4,
-            boxShadow: 4
+            boxShadow: 4,
+            marginTop: 5
         }}>
             <Grid container spacing={4}>
                 <Grid item xs={12} md={6}>
@@ -99,9 +128,9 @@ const QuotationCard = () => {
                             onChange={handleChangeShops}
                         >
                             <MenuItem value="">Select a shop</MenuItem>
-                            <MenuItem value={10}>Shop 1</MenuItem>
-                            <MenuItem value={20}>Shop 2</MenuItem>
-                            <MenuItem value={30}>Shop 3</MenuItem>
+                            <MenuItem value={23}>Shop 1</MenuItem>
+                            <MenuItem value={24}>Shop 2</MenuItem>
+                            <MenuItem value={31}>Shop 3</MenuItem>
                         </Select>
                         {formErrors.shops && <Typography variant="caption" color="error">{formErrors.shops}</Typography>}
                     </FormControl>
@@ -112,14 +141,26 @@ const QuotationCard = () => {
                         <Select
                             labelId="item-status-select-label"
                             id="item-status-select"
-                            value={itemStatus}
+                            
+                            value={itemStatus || []}
                             label="Item Status"
-                            onChange={handleChange}
+                            onChange={handleChangeItemStatus}
+                            renderValue={(selected) => {
+                                if (selected.length === 0) {
+                                    return "Select an item status";
+                                } else if (selected.includes("") && selected.length > 1) {
+                                    return "All";
+                                } else if (selected.includes("")) {
+                                    return "App";
+                                } else {
+                                    return selected.join(", ");
+                                }
+                            }}
                         >
-                            <MenuItem value="">Select an item status</MenuItem>
-                            <MenuItem value={10}>All</MenuItem>
-                            <MenuItem value={20}>Instock</MenuItem>
-                            <MenuItem value={30}>Catalogue</MenuItem>
+                            <MenuItem value="All">All</MenuItem>
+                            <MenuItem value="App">App</MenuItem>
+                            <MenuItem value="Instock">Instock</MenuItem>
+                            <MenuItem value="Catalogue">Catalogue</MenuItem>
                         </Select>
                         {formErrors.itemStatus && <Typography variant="caption" color="error">{formErrors.itemStatus}</Typography>}
                     </FormControl>
@@ -150,6 +191,7 @@ const QuotationCard = () => {
                             size="middle"
                             style={{ width: '100%' }}
                             value={date}
+                            defaultValue={new Date()}
                             onChange={handleDateChange}
                         />
                         {formErrors.date && <Typography variant="caption" color="error">{formErrors.date}</Typography>}
@@ -185,6 +227,12 @@ const QuotationCard = () => {
                     </Button>
                 </Grid>
             </Grid>
+            <SnackAlert
+                type={deleteQuotations.status === 200 ? 'success' : 'error'}
+                status={snackBarStatus}
+                onClose={() => setSnackBarStatus(!snackBarStatus)}
+                message={deleteQuotations?.message || "Quotations deleted successfully"}
+            />
         </Paper>
     );
 };
