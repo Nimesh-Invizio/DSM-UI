@@ -4,13 +4,13 @@ import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import Login from "./components/Login/Login";
 import Server from "./components/Server/Server";
 import User from "./components/User/User";
-import Company from "./components/Company/company";
-import Shops from "./components/Shop/Shop";
 import Shop from "./pages/shop";
+import Shops from "./components/Shop/Shop";
 import Sidenav from "./common/SideNav";
 import Navbar from "./common/Navbar";
 import Devices from "./pages/device";
 import { PulseLoader } from "react-spinners";
+import Company from "./pages/company";
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

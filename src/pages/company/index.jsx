@@ -31,6 +31,7 @@ const  Company = () => {
 
   // Get serverId from localStorage
   const serverDetails = JSON.parse(localStorage.getItem('serverDetails'));
+
   const serverId = serverDetails ? serverDetails.uniqueId : null;
 
   //Create Company
@@ -67,6 +68,7 @@ const  Company = () => {
     };
 
     if (serverId) {
+      console.log(serverId);
       fetchData();
     }
   }, [serverId]);

@@ -1,6 +1,6 @@
 import Sidenav from "../../common/SideNav";
 import Navbar from "../../common/Navbar";
-import React, { useCallback, useMemo, useState, useEffect ,useContext} from "react";
+import React, { useCallback, useMemo, useState, useEffect, useContext } from "react";
 import Axios from "axios";
 import {
   Box,
@@ -23,10 +23,10 @@ import {
   InputLabel,
   TextField,
 } from "@mui/material";
-import { FaPencilAlt, FaPlus, FaTrash } from "react-icons/fa";
+import { FaPencilAlt, FaPlus, FaTrash, FaDesktop } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import { ServerContext } from '../../context/ServerContext';
-
+import DevicesModal from "../../common/DevicesModal";
 
 function Shops() {
   const [tableData, setTableData] = useState([]);
@@ -36,8 +36,7 @@ function Shops() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editModalValues, setEditModalValues] = useState({});
 
-  //Pagination Start
-
+  // Pagination
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
@@ -49,7 +48,6 @@ function Shops() {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-
 
   useEffect(() => {
     const fetchData = async () => {
@@ -70,7 +68,6 @@ function Shops() {
     setServerId(uniqueId);
   }, [uniqueId, setServerId]);
 
-
   const getAllShop = async () => {
     try {
       const response = await Axios.get(
@@ -89,7 +86,6 @@ function Shops() {
         values
       );
       setTableData([...tableData, response.data]);
-      console.log(response.data);
       setCreateModalOpen(false);
     } catch (error) {
       console.error("Error creating a new row:", error);
@@ -103,7 +99,6 @@ function Shops() {
         row
       );
 
-      console.log("RES : ", response);
       if (
         response &&
         response.data &&
@@ -111,7 +106,6 @@ function Shops() {
         response.data.data.data
       ) {
         const updatedData = response.data.data.data;
-        console.log("updatedData", updatedData);
         setEditModalValues(updatedData);
         setEditModalOpen(true);
       } else {
@@ -141,7 +135,6 @@ function Shops() {
 
   const columns = useMemo(
     () => [
-      // Define your columns as per your data structure
       { accessorKey: "id", header: "ID", enableEditing: false },
       { accessorKey: "shopName", header: "Shop-Name" },
     ],
@@ -155,20 +148,35 @@ function Shops() {
       <Box sx={{ display: "flex" }}>
         <Sidenav />
         <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-          <Button
-            color="primary"
-            variant="contained"
-            sx={{
-              ml: "auto",
-              display: "flex",
-              justifyContent: "flex-end",
-              background: "#6FC276",
-              color: "white",
-            }}
-            onClick={() => setCreateModalOpen(true)}
-          >
-            + Add Shop
-          </Button>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              color="primary"
+              variant="contained"
+              sx={{
+                ml: "auto",
+                background: "#6FC276",
+                color: "white",
+              }}
+              onClick={() => setCreateModalOpen(true)}
+            >
+              <FaPlus style={{ marginRight: '5px' }} />
+              Add Shop
+            </Button>
+            <DevicesModal />
+            <Button
+              color="primary"
+              variant="contained"
+              sx={{
+                ml: 2,
+                background: "#6FC276",
+                color: "white",
+              }}
+              onClick={() => {}} 
+            >
+              <FaPlus style={{ marginRight: '5px' }} />
+              Special Features
+            </Button>
+          </Box>
 
           <Box sx={{ p: 3 }}>
             <TableContainer component={Paper}>
@@ -201,7 +209,6 @@ function Shops() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {console.log(typeof tableData)}
                   {tableData
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((row, rowIndex) => (
@@ -228,7 +235,7 @@ function Shops() {
               </Table>
 
               <TablePagination
-                rowsPerPageOptions={[5, 10, 25]}
+                rowsPerPageOptions={[5,10, 25]}
                 component="div"
                 count={tableData.length}
                 rowsPerPage={rowsPerPage}
@@ -285,7 +292,6 @@ export const CreateNewShopModal = ({ open, onClose, onSubmit }) => {
   });
 
   const handleSubmit = () => {
-    // Implement your validation logic here if needed
     onSubmit(values);
     onClose();
     window.location.reload();
@@ -529,15 +535,12 @@ export const CreateNewShopModal = ({ open, onClose, onSubmit }) => {
 export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
   const [editedValues, setEditedValues] = useState(values);
   const { uniqueId } = useParams();
-  // console.log("values :", values.id);
-  console.log("Model :", uniqueId);
+
   useEffect(() => {
-    // Update editedValues when values change (initially and on subsequent edits)
     setEditedValues(values);
   }, [values]);
 
   const handleEditSubmit = async () => {
-    // Implement your validation logic here if needed
     const res = await Axios.patch(
       `http://localhost:8070/api/v1/servers/shop/${uniqueId}/${values.id}`,
       editedValues
@@ -797,3 +800,5 @@ export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
 };
 
 export default Shops;
+
+
