@@ -12,9 +12,11 @@ import AccountCircle from "@mui/icons-material/AccountCircle";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import MoreIcon from "@mui/icons-material/MoreVert";
 import { useAppStore } from "../../AppStore";
-import { FaSignOutAlt, FaUser } from "react-icons/fa";
+import { FaSignOutAlt, FaUser, FaPlug } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { Badge } from "antd";
+import { Badge, Button } from "antd";
+import { AuthContext } from "../../context/AuthContext";
+import Paper from "@mui/material/Paper";
 
 const AppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== "open",
@@ -30,6 +32,7 @@ export default function Navbar() {
   const updateOpen = useAppStore((state) => state.updateOpen);
   const dopen = useAppStore((state) => state.dopen);
   const navigate = useNavigate();
+  const { isLoggedIn, user, onLogout } = React.useContext(AuthContext);
 
   const isMenuOpen = Boolean(anchorEl);
   const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
@@ -52,12 +55,17 @@ export default function Navbar() {
   };
 
   const handleLogout = () => {
-    // Clear all application data and auth token
+    onLogout();
     localStorage.clear();
-
-    // Redirect to the login page
-    navigate("/", { replace: true });
+    navigate("/login", { replace: true });
   };
+
+  const handleDisconnect = () => {
+    localStorage.removeItem('serverDetails');
+    navigate("/server", { replace: true });
+  };
+
+  const serverDetails = JSON.parse(localStorage.getItem('serverDetails'));
 
   const menuId = "primary-search-account-menu";
   const renderMenu = (
@@ -159,6 +167,52 @@ export default function Navbar() {
           </Typography>
 
           <Box sx={{ flexGrow: 1 }} />
+          {serverDetails && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Paper
+                variant="outlined"
+                sx={{
+                  padding: "8px 16px",
+                  borderColor: "white",
+                  color: "white",
+                  backgroundColor: alpha("#ffffff", 0.1),
+                  boxShadow: "0px 3px 10px rgba(0, 0, 0, 0.2)",
+                  borderRadius: "20px",
+                  display: "flex",
+                  alignItems: "center",
+                  '&:hover': {
+                    borderColor: "white",
+                    backgroundColor: alpha("#ffffff", 0.2),
+                  },
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: "white",
+                    fontWeight: "bold",
+                    fontFamily: "Arial, sans-serif",
+                    textAlign: "center",
+                  }}
+                >
+                  Connected to {serverDetails.IPaddress}:{serverDetails.portNumber}
+                </Typography>
+              </Paper>
+              <Button
+                type="primary"
+                onClick={handleDisconnect}
+                icon={<FaPlug />}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  backgroundColor: "#f44336",
+                  borderColor: "#f44336",
+                }}
+              >
+                Disconnect
+              </Button>
+            </Box>
+          )}
           <Box sx={{ display: { xs: "none", md: "flex" } }}>
             <IconButton
               size="large"

@@ -3,8 +3,8 @@ import axios from 'axios';
 
 // Default configuration
 const defaultConfig = {
-  baseURL: process.env.REACT_APP_API_BASE_URL, // Set the base URL from environment variable
-  timeout: 60000, // Request timeout in milliseconds
+  baseURL: process.env.REACT_APP_API_BASE_URL,
+  timeout: 60000, 
   headers: {
     'Content-Type': 'application/json',
   },
@@ -32,14 +32,10 @@ const responseInterceptor = (response) => {
 // Error interceptor for handling errors
 const errorInterceptor = (error) => {
   if (error.response) {
-    // Server responded with a status code outside the 2xx range
     console.error('API Error:', error.response.data);
     console.error('Status:', error.response.status);
 
-    // You can handle different error status codes here
     if (error.response.status === 401) {
-      // Unauthorized, handle token expiration or logout
-      // ...
     } else if (error.response.status === 403) {
       // Forbidden, handle insufficient permissions
       // ...

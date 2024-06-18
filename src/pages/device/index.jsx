@@ -22,19 +22,28 @@ import {
   Input,
   InputLabel,
   TextField,
+  MenuItem,
+  Select,
+  CircularProgress
 } from "@mui/material";
 import { FaPencilAlt, FaPlus, FaTrash } from "react-icons/fa";
 import { useParams } from "react-router-dom";
+import apiContract from './services/device.service';
+import LoadingSpinner from "../../common/LoadingSpinner";
+import { generateRandomDeviceId } from "./util";
 
-function Shops() {
+function Devices() {
   const [tableData, setTableData] = useState([]);
-  const { uniqueId, id } = useParams();
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editModalValues, setEditModalValues] = useState({});
+  const [selectedShop, setSelectedShop] = useState("");
+  const [shops, setShops] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const serverId = JSON.parse(localStorage.getItem('serverDetails')).uniqueId;
 
   //Pagination Start
-
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
@@ -52,24 +61,53 @@ function Shops() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await Axios.get(
-          `http://localhost:8070/api/v1/servers/shop/${uniqueId}/${id}`
-        );
-        setTableData(response.data.data.data);
+        const response = await Axios.get(`http://localhost:8070/api/v1/servers/${serverId}/shops/${selectedShop}/devices`);
+        setTableData(response.data.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     };
 
     fetchData();
+  }, [selectedShop]);
+
+  useEffect(() => {
+    const fetchShops = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiContract.getAllShops(serverId);
+        if (response.status === 200) {
+          setShops(response.data);
+        } else {
+          console.error(response.message);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchShops();
   }, []);
 
-  const getAllShop = async () => {
+  const handleShopChange = (event) => {
+    setSelectedShop(event.target.value);
+  };
+
+  const getAllDevices = async () => {
     try {
-      const response = await Axios.get(
-        `http://localhost:8070/api/v1/servers/shop/${uniqueId}/${id}`
-      );
-      setTableData(response.data.data.data);
+      const response = await Axios.get(`http://localhost:8070/api/v1/servers/${serverId}/shops/${selectedShop}/devices`);
+      setTableData(response.data.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const getAllDevicesApiCall = async () => {
+    try {
+      const response = await Axios.get(`http://localhost:8070/api/v1/servers/${serverId}/shops/${selectedShop}/devices`);
+      return response.data.data;
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -77,32 +115,29 @@ function Shops() {
 
   const handleCreateNewRow = async (values) => {
     try {
-      const response = await Axios.post(
-        `http://localhost:8070/api/v1/servers/shop/${uniqueId}`,
-        values
-      );
-      setTableData([...tableData, response.data]);
-      console.log(response.data);
-      setCreateModalOpen(false);
+      values = { ...values, deviceId: generateRandomDeviceId(), shopId: selectedShop };
+      const response = await apiContract.createDevice(serverId, selectedShop, values);
+      const devices = await getAllDevicesApiCall();
+  
+      if (response.status === 200) {
+        setTableData((prevTableData) => [...devices]);
+        setCreateModalOpen(false);
+      } else {
+        console.error("Error creating a new device:", response.message);
+      }
     } catch (error) {
       console.error("Error creating a new row:", error);
     }
   };
-
+  
   const handleEditRow = async (row) => {
     try {
       const response = await Axios.get(
-        `http://localhost:8070/api/v1/servers/singleshop/${uniqueId}/${row.id}`,
-        row
+        `http://localhost:8070/api/v1/devices/single/${serverId}/${row.id}`
       );
 
       console.log("RES : ", response);
-      if (
-        response &&
-        response.data &&
-        response.data.data &&
-        response.data.data.data
-      ) {
+      if (response && response.data && response.data.data) {
         const updatedData = response.data.data.data;
         console.log("updatedData", updatedData);
         setEditModalValues(updatedData);
@@ -122,7 +157,7 @@ function Shops() {
 
     try {
       await Axios.delete(
-        `http://localhost:8070/api/v1/servers/deleteshop/${uniqueId}/${row.id}`
+        `http://localhost:8070/api/v1/devices/delete/${serverId}/${row.id}`
       );
       const updatedTableData = [...tableData];
       updatedTableData.splice(row.index, 1);
@@ -134,68 +169,107 @@ function Shops() {
 
   const columns = useMemo(
     () => [
-      // Define your columns as per your data structure
-      { accessorKey: "id", header: "ID", enableEditing: false },
-      { accessorKey: "shopName", header: "Shop-Name" },
+      { accessorKey: "deviceName", header: "Device Name" },
+      { accessorKey: "deviceId", header: "Device ID" },
+      { accessorKey: "brandName", header: "Brand Name" },
+      { accessorKey: "apkVersion", header: "APK Version" },
+      { accessorKey: "modelName", header: "Model Name" },
     ],
     []
   );
 
   return (
-    <>
-      <Navbar />
-      <Box height={60} />
-      <Box sx={{ display: "flex" }}>
-        <Sidenav />
-        <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-          <Button
-            color="primary"
-            variant="contained"
-            sx={{
-              ml: "auto",
-              display: "flex",
-              justifyContent: "flex-end",
-              background: "#6FC276",
-              color: "white",
-            }}
-            onClick={() => setCreateModalOpen(true)}
-          >
-            + Add Shop
-          </Button>
+<>
+  <Navbar />
+  <Box height={60} />
+  <Box sx={{ display: "flex" }}>
+    <Sidenav />
+    <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <Select
+          value={selectedShop}
+          onChange={handleShopChange}
+          sx={{ width: 200 }}
+        >
+          <MenuItem value="">Select Shop</MenuItem>
+          {shops.map((shop) => (
+            <MenuItem key={shop.id} value={shop.id}>
+              {shop.shopName}
+            </MenuItem>
+          ))}
+        </Select>
+        <Button
+          color="primary"
+          variant="contained"
+          sx={{
+            background: "#6FC276",
+            color: "white",
+            ml: 2,
+          }}
+          onClick={() => setCreateModalOpen(true)}
+        >
+          + Add Device
+        </Button>
+      </Box>
 
-          <Box sx={{ p: 3 }}>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    {columns.map((column) => (
-                      <TableCell
-                        key={column.accessorKey}
-                        style={{
-                          background: "#6FC276",
-                          color: "white",
-                          fontSize: "20px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {column.header}
-                      </TableCell>
-                    ))}
-                    <TableCell
-                      style={{
-                        background: "#6FC276",
-                        color: "white",
-                        fontSize: "20px",
-                        textAlign: "center",
-                      }}
-                    >
-                      Actions
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {console.log(typeof tableData)}
-                  {tableData
+      <Box sx={{ p: 3, position: "relative" }}>
+        {!selectedShop && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: "80%",
+              left: "45%",
+              transform: "translate(-50%, -50%)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <CircularProgress sx={{
+      color: "#6FC276"
+    }} size={60} thickness={4} />
+          </Box>
+        )}
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                {columns.map((column) => (
+                  <TableCell
+                    key={column.accessorKey}
+                    style={{
+                      background: "#6FC276",
+                      color: "white",
+                      fontSize: "20px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {column.header}
+                  </TableCell>
+                ))}
+                <TableCell
+                  style={{
+                    background: "#6FC276",
+                    color: "white",
+                    fontSize: "20px",
+                    textAlign: "center",
+                  }}
+                >
+                  Actions
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {selectedShop ? (
+                tableData.length > 0 ? (
+                  tableData
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((row, rowIndex) => (
                       <TableRow key={row.id}>
@@ -216,289 +290,170 @@ function Shops() {
                           </IconButton>
                         </TableCell>
                       </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
+                    ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length + 1} align="center">
+                      No data available
+                    </TableCell>
+                  </TableRow>
+                )
+              ) : null}
+            </TableBody>
+          </Table>
 
-              <TablePagination
-                rowsPerPageOptions={[5, 10, 25]}
-                component="div"
-                count={tableData.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                nextIconButtonText="Next"
-                backIconButtonText="Previous"
-              />
-            </TableContainer>
-          </Box>
-
-          <CreateNewShopModal
-            open={createModalOpen}
-            onClose={() => setCreateModalOpen(false)}
-            onSubmit={handleCreateNewRow}
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={tableData.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            nextIconButtonText="Next"
+            backIconButtonText="Previous"
           />
-
-          <EditShopModal
-            open={editModalOpen}
-            onClose={() => setEditModalOpen(false)}
-            onSubmit={getAllShop}
-            values={editModalValues}
-          />
-        </Box>
+        </TableContainer>
       </Box>
-    </>
-  );
+
+      <CreateNewDeviceModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSubmit={handleCreateNewRow}
+      />
+
+      <EditDeviceModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        onSubmit={getAllDevices}
+        values={editModalValues}
+      />
+    </Box>
+  </Box>
+</>
+ );
 }
 
-export const CreateNewShopModal = ({ open, onClose, onSubmit }) => {
+export const CreateNewDeviceModal = ({ open, onClose, onSubmit }) => {
   const { id } = useParams();
   const [values, setValues] = useState({
-    shopName: "",
-    companyId: id,
-    licenseRegAt: "",
-    licenseKey: "",
-    licenseExpiresAt: "",
-    addressLine1: "",
-    addressLine2: "",
-    state: "",
-    city: "",
-    pinCode: "",
-    country: "",
-    taxType: "",
-    taxNumber: "",
-    isPrimary: 0,
-    email: "",
-    phone: "",
-    password: "",
-    features: "",
-    quotationAllStatus: "",
-    allowedDevices: "",
+    deviceName: "",
+    brandName: "",
+    apkVersion: "",
+    modelName: "",
+    shopId: "",
   });
+  const [errors, setErrors] = useState({});
 
   const handleSubmit = () => {
-    // Implement your validation logic here if needed
-    onSubmit(values);
-    onClose();
-    window.location.reload();
+    const trimmedValues = {
+      deviceName: values.deviceName.trim(),
+      brandName: values.brandName.trim(),
+      apkVersion: values.apkVersion.trim(),
+      modelName: values.modelName.trim(),
+      shopId: values.shopId.trim(),
+    };
+  
+    const validationErrors = validateFields(trimmedValues);
+  
+    console.log("Trimmed Values:", trimmedValues);
+    console.log("Validation Errors:", validationErrors);
+  
+    if (Object.keys(validationErrors).length === 0) {
+      console.log("No validation errors, submitting form...");
+      onSubmit(trimmedValues);
+      onClose();
+    } else {
+      console.log("Validation errors found, not submitting form.");
+      setErrors(validationErrors);
+    }
+  };
+
+  const validateFields = (values) => {
+    const errors = {};
+
+    if (!values.deviceName) {
+      errors.deviceName = "Device Name is required";
+    }
+
+    if (!values.brandName) {
+      errors.brandName = "Brand Name is required";
+    }
+
+    if (!values.apkVersion) {
+      errors.apkVersion = "APK Version is required";
+    }
+
+    if (!values.modelName) {
+      errors.modelName = "Model Name is required";
+    }
+
+   
+
+    return errors;
   };
 
   return (
     <Dialog open={open}>
-      <DialogTitle>Create New Shop</DialogTitle>
+      <DialogTitle>Create New Device</DialogTitle>
       <DialogContent>
         <Grid container spacing={2}>
           <Grid item xs={4}>
-            <InputLabel>CompanyId</InputLabel>
+            <InputLabel>Device Name</InputLabel>
             <Input
-              value={values.companyId}
+              value={values.deviceName}
               onChange={(e) =>
-                setValues({ ...values, companyId: e.target.value })
+                setValues({ ...values, deviceName: e.target.value })
               }
               fullWidth
-              disabled
+              error={!!errors.deviceName}
             />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>Shop-Name</InputLabel>
-            <Input
-              value={values.shopName}
-              onChange={(e) =>
-                setValues({ ...values, shopName: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>License Create at</InputLabel>
-            <Input
-              type="date"
-              value={values.licenseRegAt}
-              onChange={(e) =>
-                setValues({ ...values, licenseRegAt: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>License-Key</InputLabel>
-            <Input
-              value={values.licenseKey}
-              onChange={(e) =>
-                setValues({ ...values, licenseKey: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>License Expires at</InputLabel>
-            <Input
-              type="date"
-              value={values.licenseExpiresAt}
-              onChange={(e) =>
-                setValues({ ...values, licenseExpiresAt: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>Address-Line-1</InputLabel>
-            <Input
-              value={values.addressLine1}
-              onChange={(e) =>
-                setValues({ ...values, addressLine1: e.target.value })
-              }
-              fullWidth
-            />
+            {errors.deviceName && (
+              <div style={{ color: "red" }}>{errors.deviceName}</div>
+            )}
           </Grid>
 
           <Grid item xs={4}>
-            <InputLabel>Address-Line-2</InputLabel>
+            <InputLabel>Brand Name</InputLabel>
             <Input
-              value={values.addressLine2}
+              value={values.brandName}
               onChange={(e) =>
-                setValues({ ...values, addressLine2: e.target.value })
+                setValues({ ...values, brandName: e.target.value })
               }
               fullWidth
+              error={!!errors.brandName}
             />
+            {errors.brandName && (
+              <div style={{ color: "red" }}>{errors.brandName}</div>
+            )}
           </Grid>
-
           <Grid item xs={4}>
-            <InputLabel>State</InputLabel>
+            <InputLabel>APK Version</InputLabel>
             <Input
-              value={values.state}
-              onChange={(e) => setValues({ ...values, state: e.target.value })}
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>City</InputLabel>
-            <Input
-              value={values.city}
-              onChange={(e) => setValues({ ...values, city: e.target.value })}
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Country</InputLabel>
-            <Input
-              value={values.country}
+              value={values.apkVersion}
               onChange={(e) =>
-                setValues({ ...values, country: e.target.value })
+                setValues({ ...values, apkVersion: e.target.value })
               }
               fullWidth
+              error={!!errors.apkVersion}
             />
+            {errors.apkVersion && (
+              <div style={{ color: "red" }}>{errors.apkVersion}</div>
+            )}
           </Grid>
-
           <Grid item xs={4}>
-            <InputLabel>Pincode</InputLabel>
+            <InputLabel>Model Name</InputLabel>
             <Input
-              value={values.pinCode}
+              value={values.modelName}
               onChange={(e) =>
-                setValues({ ...values, pinCode: e.target.value })
+                setValues({ ...values, modelName: e.target.value })
               }
               fullWidth
+              error={!!errors.modelName}
             />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Primary</InputLabel>
-            <Input
-              value={values.isPrimary}
-              onChange={(e) => setValues({ ...values, isPrimary: 0 })}
-              fullWidth
-              disabled
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Tax-Type</InputLabel>
-            <Input
-              value={values.taxType}
-              onChange={(e) =>
-                setValues({ ...values, taxType: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Tax-Number</InputLabel>
-            <Input
-              value={values.taxNumber}
-              onChange={(e) =>
-                setValues({ ...values, taxNumber: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Email</InputLabel>
-            <Input
-              type="email"
-              value={values.email}
-              onChange={(e) => setValues({ ...values, email: e.target.value })}
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Password</InputLabel>
-            <Input
-              type="password"
-              value={values.password}
-              onChange={(e) =>
-                setValues({ ...values, password: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Contact</InputLabel>
-            <Input
-              value={values.phone}
-              onChange={(e) => setValues({ ...values, phone: e.target.value })}
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>QuotationAllStatus</InputLabel>
-            <Input
-              defaultValue=""
-              value={values.quotationAllStatus}
-              onChange={(e) =>
-                setValues({ ...values, quotationAllStatus: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Allowed-Devices</InputLabel>
-            <Input
-              type="number"
-              value={values.allowedDevices}
-              onChange={(e) =>
-                setValues({ ...values, allowedDevices: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <InputLabel>Features</InputLabel>
-            <TextField
-              value={values.features}
-              onChange={(e) =>
-                setValues({ ...values, features: e.target.value })
-              }
-              fullWidth
-            />
+            {errors.modelName && (
+              <div style={{ color: "red" }}>{errors.modelName}</div>
+            )}
           </Grid>
         </Grid>
       </DialogContent>
@@ -519,274 +474,126 @@ export const CreateNewShopModal = ({ open, onClose, onSubmit }) => {
   );
 };
 
-export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
-  const [editedValues, setEditedValues] = useState(values);
-  const { uniqueId } = useParams();
-  // console.log("values :", values.id);
-  console.log("Model :", uniqueId);
-  useEffect(() => {
-    // Update editedValues when values change (initially and on subsequent edits)
-    setEditedValues(values);
-  }, [values]);
+export const EditDeviceModal = ({ open, onClose, onSubmit, values }) => {
+ const [editedValues, setEditedValues] = useState(values);
+ const { uniqueId } = useParams();
 
-  const handleEditSubmit = async () => {
-    // Implement your validation logic here if needed
-    const res = await Axios.patch(
-      `http://localhost:8070/api/v1/servers/shop/${uniqueId}/${values.id}`,
-      editedValues
-    );
-    onSubmit(res);
-    onClose();
-  };
+ useEffect(() => {
+   setEditedValues(values);
+ }, [values]);
 
-  return (
-    <Dialog open={open}>
-      <DialogTitle>Edit Shop</DialogTitle>
-      <DialogContent>
-        <Grid container spacing={2}>
-          <Grid item xs={4}>
-            <InputLabel>Company-Name</InputLabel>
-            <Input
-              value={editedValues.shopName}
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  shopName: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>License Create At</InputLabel>
-            <Input
-              type="date"
-              value={editedValues.licenseRegAt}
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  licenseRegAt: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>License Expires At</InputLabel>
-            <Input
-              type="date"
-              value={editedValues.licenseExpiresAt}
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  licenseExpiresAt: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>License Key</InputLabel>
-            <Input
-              value={editedValues.licenseKey}
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  licenseKey: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>Address-Line-1</InputLabel>
-            <Input
-              value={
-                editedValues &&
-                editedValues.address &&
-                editedValues.address.addressLine1
-                  ? editedValues.address.addressLine1
-                  : ""
-              }
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  addressLine1: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
+ const handleEditSubmit = async () => {
+   const res = await Axios.patch(
+     `http://localhost:8070/api/v1/devices/update/${uniqueId}/${values.id}`,
+     editedValues
+   );
+   onSubmit(res);
+   onClose();
+ };
 
-          <Grid item xs={4}>
-            <InputLabel>Address-Line-2</InputLabel>
-            <Input
-              value={
-                editedValues &&
-                editedValues.address &&
-                editedValues.address.addressLine2
-                  ? editedValues.address.addressLine2
-                  : ""
-              }
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  addressLine2: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>State</InputLabel>
-            <Input
-              value={
-                editedValues &&
-                editedValues.address &&
-                editedValues.address.state
-                  ? editedValues.address.state
-                  : ""
-              }
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, state: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>City</InputLabel>
-            <Input
-              value={
-                editedValues &&
-                editedValues.address &&
-                editedValues.address.city
-                  ? editedValues.address.city
-                  : ""
-              }
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, city: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Country</InputLabel>
-            <Input
-              value={
-                editedValues &&
-                editedValues.address &&
-                editedValues.address.country
-                  ? editedValues.address.country
-                  : ""
-              }
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, country: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Pincode</InputLabel>
-            <Input
-              value={
-                editedValues &&
-                editedValues.address &&
-                editedValues.address.pinCode
-                  ? editedValues.address.pinCode
-                  : ""
-              }
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, pinCode: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Email</InputLabel>
-            <Input
-              value={editedValues.email}
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, email: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Contact</InputLabel>
-            <Input
-              value={editedValues.phone}
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, phone: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>QuatationAllStatus</InputLabel>
-            <Input
-              value={editedValues.quotationAllStatus}
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  quotationAllStatus: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Allowed Devices</InputLabel>
-            <Input
-              type="number"
-              value={editedValues.allowedDevices}
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  allowedDevices: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={12}>
-            <InputLabel>Features</InputLabel>
-            <TextField
-              value={editedValues.features}
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, features: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} sx={{ color: "#6FC276" }}>
-          Cancel
-        </Button>
-        <Button
-          color="primary"
-          onClick={() => {
-            handleEditSubmit();
-            onClose();
-          }}
-          variant="contained"
-          sx={{ background: "#6FC276", color: "white" }}
-        >
-          Save Changes
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
+ return (
+   <Dialog open={open}>
+     <DialogTitle>Edit Device</DialogTitle>
+     <DialogContent>
+       <Grid container spacing={2}>
+         <Grid item xs={4}>
+           <InputLabel>Device Name</InputLabel>
+           <Input
+             value={editedValues.deviceName}
+             onChange={(e) =>
+               setEditedValues({
+                 ...editedValues,
+                 deviceName: e.target.value,
+               })
+             }
+             fullWidth
+           />
+         </Grid>
+         <Grid item xs={4}>
+           <InputLabel>Device ID</InputLabel>
+           <Input
+             value={editedValues.deviceId}
+             onChange={(e) =>
+               setEditedValues({
+                 ...editedValues,
+                 deviceId: e.target.value,
+               })
+             }
+             fullWidth
+           />
+         </Grid>
+         <Grid item xs={4}>
+           <InputLabel>Brand Name</InputLabel>
+           <Input
+             value={editedValues.brandName}
+             onChange={(e) =>
+               setEditedValues({
+                 ...editedValues,
+                 brandName: e.target.value,
+               })
+             }
+             fullWidth
+           />
+         </Grid>
+         <Grid item xs={4}>
+           <InputLabel>APK Version</InputLabel>
+           <Input
+             value={editedValues.apkVersion}
+             onChange={(e) =>
+               setEditedValues({
+                 ...editedValues,
+                 apkVersion: e.target.value,
+               })
+             }
+             fullWidth
+           />
+         </Grid>
+         <Grid item xs={4}>
+           <InputLabel>Model Name</InputLabel>
+           <Input
+             value={editedValues.modelName}
+             onChange={(e) =>
+               setEditedValues({
+                 ...editedValues,
+                 modelName: e.target.value,
+               })
+             }
+             fullWidth
+           />
+         </Grid>
+         <Grid item xs={4}>
+           <InputLabel>Shop ID</InputLabel>
+           <Input
+             value={editedValues.shopId}
+             onChange={(e) =>
+               setEditedValues({
+                 ...editedValues,
+                 shopId: e.target.value,
+               })
+             }
+             fullWidth
+           />
+         </Grid>
+       </Grid>
+     </DialogContent>
+     <DialogActions>
+       <Button onClick={onClose} sx={{ color: "#6FC276" }}>
+         Cancel
+       </Button>
+       <Button
+         color="primary"
+         onClick={() => {
+           handleEditSubmit();
+           onClose();
+         }}
+         variant="contained"
+         sx={{ background: "#6FC276", color: "white" }}
+       >
+         Save Changes
+       </Button>
+     </DialogActions>
+   </Dialog>
+ );
 };
 
-export default Shops;
+export default Devices;

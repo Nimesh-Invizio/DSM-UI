@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import Login from "./components/Login/Login"; // Import Login component
-import Server from "./components/Server/Server"; // Import Server component
-import User from "./components/User/User"; // Import User component
-import Company from "./components/Company/company"; // Import Company component
-import Shops from "./components/Shop/Shop"; // Import Shops component
-import Shop from "./pages/shop"; // Import Shop component
-import Sidenav from "./common/SideNav"; // Import SideNav component
-import Navbar from "./common/Navbar"; // Import Navbar component
-import Devices from "./pages/device"; // Import Devices component
-import { PulseLoader } from "react-spinners"; // Import PulseLoader
+import Login from "./components/Login/Login";
+import Server from "./components/Server/Server";
+import User from "./components/User/User";
+import Company from "./components/Company/company";
+import Shops from "./components/Shop/Shop";
+import Shop from "./pages/shop";
+import Sidenav from "./common/SideNav";
+import Navbar from "./common/Navbar";
+import Devices from "./pages/device";
+import { PulseLoader } from "react-spinners";
 
-function App() {
+const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false); // New state for loading indicator
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,11 +28,22 @@ function App() {
 
   useEffect(() => {
     if (isLoggedIn) {
-      setIsLoading(true); 
+      setIsLoading(true);
       setTimeout(() => {
         setIsLoading(false);
-        navigate("/server");
-      }, 1000); 
+        const serverDetails = localStorage.getItem("serverDetails");
+        if (serverDetails) {
+          navigate("/companies");
+        } else {
+          navigate("/server");
+        }
+      }, 1000);
+    }
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate("/login");
     }
   }, [isLoggedIn, navigate]);
 
@@ -42,41 +53,41 @@ function App() {
     localStorage.setItem("user", JSON.stringify(userData));
   };
 
-  const handleLogout = () => {
+  const onLogout = () => {
     setIsLoggedIn(false);
     setUser(null);
     localStorage.removeItem("user");
-    navigate("/");
+    navigate("/login");
   };
 
   return (
     <div className="App">
-      {isLoggedIn && <Navbar isLoggedIn={isLoggedIn} onLogout={handleLogout} user={user} />}
+      {isLoggedIn && <Navbar isLoggedIn={isLoggedIn} onLogout={onLogout} user={user} />}
       {isLoggedIn && <Sidenav />}
       <Routes>
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
         <Route path="/" element={isLoggedIn ? <Navigate to="/server" /> : <Navigate to="/login" />} />
-        <Route path="/server" element={
-          isLoggedIn ? (
-            isLoading ? ( // Display loading indicator while data is fetched
+        <Route
+          path="/server"
+          element={
+            isLoading ? (
               <div className="loading-container">
                 <PulseLoader color="#6fc276" loading={isLoading} size={20} />
               </div>
             ) : (
               <Server user={user} />
             )
-          ) : (
-            <Navigate to="/login" />
-          )
-        } />
-        <Route path="/server/company/:uniqueId" element={isLoggedIn ? <Company user={user} /> : <Navigate to="/login" />} />
-        <Route path="/server/company/shop/:uniqueId/:id" element={isLoggedIn ? <Shops user={user} /> : <Navigate to="/login" />} />
-        <Route path="/user" element={isLoggedIn ? <User user={user} /> : <Navigate to="/login" />} />
-        <Route path="/shops" element={isLoggedIn ? <Shop user={user} /> : <Navigate to="/login" />} />
-        <Route path="/devices" element={isLoggedIn ? <Devices user={user} /> : <Navigate to="/login" />} />
+          }
+        />
+        <Route path="/companies" element={<Company user={user} />} />
+        <Route path="/server/company/:uniqueId" element={<Company user={user} />} />
+        <Route path="/server/company/shop/:uniqueId/:id" element={<Shops user={user} />} />
+        <Route path="/user" element={<User user={user} />} />
+        <Route path="/shops" element={<Shop user={user} />} />
+        <Route path="/devices" element={<Devices user={user} />} />
       </Routes>
     </div>
   );
-}
+};
 
 export default App;
