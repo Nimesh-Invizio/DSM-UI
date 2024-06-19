@@ -23,7 +23,9 @@ import {
   InputLabel,
   TextField,
 } from "@mui/material";
-import { FaPencilAlt, FaPlus, FaTrash, FaDesktop } from "react-icons/fa";
+import { FaPencilAlt, FaPlus, FaTrash, FaMobile } from "react-icons/fa";
+import { MdFolderSpecial } from "react-icons/md";
+
 import { useParams } from "react-router-dom";
 import { ServerContext } from '../../context/ServerContext';
 import DevicesModal from "../../common/DevicesModal";
@@ -35,6 +37,8 @@ function Shops() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editModalValues, setEditModalValues] = useState({});
+  const [devicesModalOpen, setDevicesModalOpen] = useState(false);
+  const [selectedShop, setSelectedShop] = useState(null);
 
   // Pagination
   const [page, setPage] = useState(0);
@@ -66,7 +70,7 @@ function Shops() {
 
   useEffect(() => {
     setServerId(uniqueId);
-  }, [uniqueId, setServerId]);
+  }, [uniqueId]);
 
   const getAllShop = async () => {
     try {
@@ -133,13 +137,21 @@ function Shops() {
     }
   };
 
+  const handleDevicesModal = (shop) => {
+    setDevicesModalOpen(true);
+    setSelectedShop(shop);
+  };
+
   const columns = useMemo(
     () => [
       { accessorKey: "id", header: "ID", enableEditing: false },
-      { accessorKey: "shopName", header: "Shop-Name" },
+      { accessorKey: "shopName", header: "Shop Name" },
+      { accessorKey: "devices", header: "Devices" },
+      { accessorKey: "features", header: "Features" },
     ],
     []
   );
+
 
   return (
     <>
@@ -162,20 +174,12 @@ function Shops() {
               <FaPlus style={{ marginRight: '5px' }} />
               Add Shop
             </Button>
-            <DevicesModal />
-            <Button
-              color="primary"
-              variant="contained"
-              sx={{
-                ml: 2,
-                background: "#6FC276",
-                color: "white",
-              }}
-              onClick={() => {}} 
-            >
-              <FaPlus style={{ marginRight: '5px' }} />
-              Special Features
-            </Button>
+            <DevicesModal
+              open={devicesModalOpen}
+              onClose={() => setDevicesModalOpen(false)}
+              shop={selectedShop}
+            />
+          
           </Box>
 
           <Box sx={{ p: 3 }}>
@@ -189,7 +193,8 @@ function Shops() {
                         style={{
                           background: "#6FC276",
                           color: "white",
-                          fontSize: "20px",
+                          fontSize: "16px",
+                          fontWeight: "bold",
                           textAlign: "center",
                         }}
                       >
@@ -200,7 +205,8 @@ function Shops() {
                       style={{
                         background: "#6FC276",
                         color: "white",
-                        fontSize: "20px",
+                        fontSize: "16px",
+                        fontWeight: "bold",
                         textAlign: "center",
                       }}
                     >
@@ -212,21 +218,31 @@ function Shops() {
                   {tableData
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((row, rowIndex) => (
-                      <TableRow key={row.id}>
+                      <TableRow key={rowIndex}>
                         {columns.map((column) => (
                           <TableCell
                             key={column.accessorKey}
                             style={{ textAlign: "center" }}
                           >
-                            {row[column.accessorKey]}
+                            {column.accessorKey === "devices" ? (
+                              <IconButton onClick={() => handleDevicesModal(row)}>
+                                <FaMobile />
+                              </IconButton>
+                            ) : column.accessorKey === "features" ? (
+                              <IconButton>
+                                <MdFolderSpecial />
+                              </IconButton>
+                            ) : (
+                              row[column.accessorKey]
+                            )}
                           </TableCell>
                         ))}
                         <TableCell style={{ textAlign: "center" }}>
                           <IconButton onClick={() => handleDeleteRow(row)}>
-                            <FaTrash></FaTrash>
+                            <FaTrash />
                           </IconButton>
                           <IconButton onClick={() => handleEditRow(row)}>
-                            <FaPencilAlt></FaPencilAlt>
+                            <FaPencilAlt />
                           </IconButton>
                         </TableCell>
                       </TableRow>
@@ -235,7 +251,7 @@ function Shops() {
               </Table>
 
               <TablePagination
-                rowsPerPageOptions={[5,10, 25]}
+                rowsPerPageOptions={[5, 10, 25]}
                 component="div"
                 count={tableData.length}
                 rowsPerPage={rowsPerPage}
@@ -244,6 +260,15 @@ function Shops() {
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 nextIconButtonText="Next"
                 backIconButtonText="Previous"
+                sx={{
+                  ".MuiTablePagination-toolbar": {
+                    backgroundColor: "#6FC276",
+                    color: "white",
+                  },
+                  ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows": {
+                    color: "white",
+                  },
+                }}
               />
             </TableContainer>
           </Box>
@@ -613,8 +638,8 @@ export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
             <Input
               value={
                 editedValues &&
-                editedValues.address &&
-                editedValues.address.addressLine1
+                  editedValues.address &&
+                  editedValues.address.addressLine1
                   ? editedValues.address.addressLine1
                   : ""
               }
@@ -633,8 +658,8 @@ export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
             <Input
               value={
                 editedValues &&
-                editedValues.address &&
-                editedValues.address.addressLine2
+                  editedValues.address &&
+                  editedValues.address.addressLine2
                   ? editedValues.address.addressLine2
                   : ""
               }
@@ -653,8 +678,8 @@ export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
             <Input
               value={
                 editedValues &&
-                editedValues.address &&
-                editedValues.address.state
+                  editedValues.address &&
+                  editedValues.address.state
                   ? editedValues.address.state
                   : ""
               }
@@ -670,8 +695,8 @@ export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
             <Input
               value={
                 editedValues &&
-                editedValues.address &&
-                editedValues.address.city
+                  editedValues.address &&
+                  editedValues.address.city
                   ? editedValues.address.city
                   : ""
               }
@@ -687,8 +712,8 @@ export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
             <Input
               value={
                 editedValues &&
-                editedValues.address &&
-                editedValues.address.country
+                  editedValues.address &&
+                  editedValues.address.country
                   ? editedValues.address.country
                   : ""
               }
@@ -704,8 +729,8 @@ export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
             <Input
               value={
                 editedValues &&
-                editedValues.address &&
-                editedValues.address.pinCode
+                  editedValues.address &&
+                  editedValues.address.pinCode
                   ? editedValues.address.pinCode
                   : ""
               }
@@ -798,7 +823,4 @@ export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
     </Dialog>
   );
 };
-
 export default Shops;
-
-

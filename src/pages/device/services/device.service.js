@@ -18,7 +18,23 @@ const apiContract = {
     } catch(error){
       throw new Error(error.response ? error.response.data : error.message)
     }
-  }
+  },
+  getDevices: async (serverId,shopId) => {
+    try {
+      const response = await api.get(`servers/${serverId}/shops/${shopId}/devices`);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  },
+  deleteDevice: async (serverId,shopId,id) => {
+    try {
+      const response = await api.delete(`servers/${serverId}/shops/${shopId}/devices/${id}`);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  },
 
 
 };

@@ -272,7 +272,7 @@ function Devices() {
                   tableData
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((row, rowIndex) => (
-                      <TableRow key={row.id}>
+                      <TableRow key={row.deviceId}>
                         {columns.map((column) => (
                           <TableCell
                             key={column.accessorKey}
@@ -597,3 +597,5 @@ export const EditDeviceModal = ({ open, onClose, onSubmit, values }) => {
 };
 
 export default Devices;
+
+

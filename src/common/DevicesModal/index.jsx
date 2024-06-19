@@ -2,10 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Box,
     Modal,
-    Button,
     Typography,
-    Select,
-    MenuItem,
     TableContainer,
     Table,
     TableHead,
@@ -15,26 +12,27 @@ import {
     IconButton,
     TablePagination,
     CircularProgress,
+    Paper,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions,
+    Button,
 } from '@mui/material';
-import { FaPencilAlt, FaPhone, FaTrash, FaTimes } from 'react-icons/fa';
+import { FaPencilAlt, FaTrash, FaTimes, FaBuilding } from 'react-icons/fa';
 import apiContract from '../../pages/device/services/device.service';
-import { CreateNewDeviceModal, EditDeviceModal } from '../../pages/device';
+import { EditDeviceModal } from '../../pages/device';
 
-const DevicesModal = () => {
-    const [open, setOpen] = useState(false);
+const DevicesModal = ({ open, onClose, shop }) => {
     const [tableData, setTableData] = useState([]);
-    const [createModalOpen, setCreateModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editModalValues, setEditModalValues] = useState({});
-    const [selectedShop, setSelectedShop] = useState('');
-    const [shops, setShops] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [deviceToDelete, setDeviceToDelete] = useState(null);
     const serverId = JSON.parse(localStorage.getItem('serverDetails')).uniqueId;
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
-
-    const handleOpen = () => setOpen(true);
-    const handleClose = () => setOpen(false);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -48,62 +46,17 @@ const DevicesModal = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await apiContract.getDevices(serverId, selectedShop);
-                setTableData(response.data.data);
+                const devices = await apiContract.getDevices(serverId, shop.id);
+                setTableData(devices);
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
         };
 
-        fetchData();
-    }, [selectedShop]);
-
-    useEffect(() => {
-        const fetchShops = async () => {
-            try {
-                setIsLoading(true);
-                const response = await apiContract.getAllShops(serverId);
-                if (response.status === 200) {
-                    setShops(response.data);
-                } else {
-                    console.error(response.message);
-                }
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchShops();
-    }, []);
-
-    const handleShopChange = (event) => {
-        setSelectedShop(event.target.value);
-    };
-
-    const getAllDevices = async () => {
-        try {
-            const response = await apiContract.getDevices(serverId, selectedShop);
-            setTableData(response.data.data);
-        } catch (error) {
-            console.error('Error fetching data:', error);
+        if (shop) {
+            fetchData();
         }
-    };
-
-    const handleCreateNewRow = async (values) => {
-        try {
-            const response = await apiContract.createDevice(serverId, selectedShop, values);
-            if (response.status === 200) {
-                getAllDevices();
-                setCreateModalOpen(false);
-            } else {
-                console.error('Error creating a new device:', response.message);
-            }
-        } catch (error) {
-            console.error('Error creating a new row:', error);
-        }
-    };
+    }, [shop, serverId]);
 
     const handleEditRow = async (row) => {
         try {
@@ -120,16 +73,21 @@ const DevicesModal = () => {
         }
     };
 
-    const handleDeleteRow = async (row) => {
-        if (!window.confirm(`Are you sure you want to delete ID: ${row.id}`)) {
-            return;
-        }
+    const handleDeleteRow = (row) => {
+        setDeviceToDelete(row);
+        setDeleteConfirmOpen(true);
+    };
 
-        try {
-            await apiContract.deleteDevice(serverId, row.id);
-            getAllDevices();
-        } catch (error) {
-            console.error('Error deleting row:', error);
+    const handleConfirmDelete = async () => {
+        if (deviceToDelete) {
+            try {
+                await apiContract.deleteDevice(serverId, shop.id ,deviceToDelete.id);
+                const updatedTableData = tableData.filter((device) => device.id !== deviceToDelete.id);
+                setTableData(updatedTableData);
+                setDeleteConfirmOpen(false);
+            } catch (error) {
+                console.error('Error deleting row:', error);
+            }
         }
     };
 
@@ -142,111 +100,96 @@ const DevicesModal = () => {
     ];
 
     return (
-        <div>
-            <Button
-                color="primary"
-                variant="contained"
+        <Modal
+            open={open}
+            onClose={onClose}
+            aria-labelledby="modal-modal-title"
+            aria-describedby="modal-modal-description"
+        >
+            <Box
                 sx={{
-                    background: '#6FC276',
-                    color: 'white',
-                    ml: 2,
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '90%',
+                    maxWidth: 1200,
+                    bgcolor: 'background.paper',
+                    boxShadow: 24,
+                    p: 2,
+                    borderRadius: 2,
+                    position: 'relative',
                 }}
-                onClick={handleOpen}
-            >
-                Devices
-                <FaPhone />
-            </Button>
-            <Modal
-                open={open}
-                onClose={handleClose}
-                aria-labelledby="modal-modal-title"
-                aria-describedby="modal-modal-description"
             >
                 <Box
                     sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: '80%',
-                        maxWidth: 1000,
-                        bgcolor: 'background.paper',
-                        boxShadow: 24,
-                        p: 4,
-                        borderRadius: 2,
-                        position: 'relative',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        mb: 2,
                     }}
                 >
-                    <IconButton
+                    <Paper
+                        elevation={3}
                         sx={{
-                            position: 'absolute',
-                            top: 0,
-                            right: 0,
-                            color: 'text.primary',
+                            p: 1,
+                            ml: 1,
+                            borderRadius: 2,
+                            boxShadow: 3,
+                            bgcolor: '#6FC276',
+                            display: 'flex',
+                            alignItems: 'center',
                         }}
-                        onClick={handleClose}
+                    >
+                        <FaBuilding size={28} color="#ffffff" />
+                        <Typography
+                            id="modal-modal-title"
+                            variant="h6"
+                            component="h2"
+                            sx={{ fontWeight: 'bold', color: '#ffffff', ml: 1 }}
+                        >
+                            {shop ? shop.shopName : ''}
+                        </Typography>
+                    </Paper>
+
+                    <IconButton
+                        onClick={onClose}
+                        sx={{ color: 'text.secondary', ml: 'auto' }}
                     >
                         <FaTimes />
                     </IconButton>
-                    <Typography id="modal-modal-title" variant="h6" component="h2" mb={2}>
-                        Devices
-                    </Typography>
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            mb: 2,
-                        }}
-                    >
-                        <Select
-                            value={selectedShop}
-                            onChange={handleShopChange}
-                            sx={{ width: 200 }}
-                        >
-                            <MenuItem value="">Select Shop</MenuItem>
-                            {shops.map((shop) => (
-                                <MenuItem key={shop.id} value={shop.id}>
-                                    {shop.shopName}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                        <Button
-                            color="primary"
-                            variant="contained"
-                            sx={{
-                                background: '#6FC276',
-                                color: 'white',
-                                ml: 2,
-                            }}
-                            onClick={() => setCreateModalOpen(true)}
-                        >
-                            + Add Device
-                        </Button>
-                    </Box>
+                </Box>
 
-                    <Box sx={{ p: 3, position: 'relative' }}>
-                        {!selectedShop && (
-                            <Box
+                <Box sx={{ p: 1, position: 'relative' }}>
+                    {!shop ? (
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                height: '300px',
+                            }}
+                        >
+                            <Typography variant="h6">Please select a shop</Typography>
+                        </Box>
+                    ) : tableData.length === 0 ? (
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                height: '300px',
+                            }}
+                        >
+                            <CircularProgress
                                 sx={{
-                                    position: 'absolute',
-                                    top: '80%',
-                                    left: '45%',
-                                    transform: 'translate(-50%, -50%)',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
+                                    color: '#6FC276',
                                 }}
-                            >
-                                <CircularProgress
-                                    sx={{
-                                        color: '#6FC276',
-                                    }}
-                                    size={60}
-                                    thickness={4}
-                                />
-                            </Box>
-                        )}
+                                size={60}
+                                thickness={4}
+                            />
+                        </Box>
+                    ) : (
                         <TableContainer component={Box}>
                             <Table>
                                 <TableHead>
@@ -257,8 +200,10 @@ const DevicesModal = () => {
                                                 style={{
                                                     background: '#6FC276',
                                                     color: 'white',
-                                                    fontSize: '20px',
+                                                    fontSize: '14px',
+                                                    fontWeight: 'bold',
                                                     textAlign: 'center',
+                                                    padding: '8px 12px',
                                                 }}
                                             >
                                                 {column.header}
@@ -268,8 +213,10 @@ const DevicesModal = () => {
                                             style={{
                                                 background: '#6FC276',
                                                 color: 'white',
-                                                fontSize: '20px',
+                                                fontSize: '14px',
+                                                fontWeight: 'bold',
                                                 textAlign: 'center',
+                                                padding: '8px 12px',
                                             }}
                                         >
                                             Actions
@@ -277,38 +224,70 @@ const DevicesModal = () => {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {selectedShop ? (
-                                        tableData.length > 0 ? (
-                                            tableData
-                                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                                .map((row, rowIndex) => (
-                                                    <TableRow key={row.id}>
-                                                        {columns.map((column) => (
-                                                            <TableCell
-                                                                key={column.accessorKey}
-                                                                style={{ textAlign: 'center' }}
-                                                            >
-                                                                {row[column.accessorKey]}
-                                                            </TableCell>
-                                                        ))}
-                                                        <TableCell style={{ textAlign: 'center' }}>
-                                                            <IconButton onClick={() => handleDeleteRow(row)}>
-                                                                <FaTrash></FaTrash>
-                                                            </IconButton>
-                                                            <IconButton onClick={() => handleEditRow(row)}>
-                                                                <FaPencilAlt></FaPencilAlt>
-                                                            </IconButton>
+                                    {tableData.length > 0 ? (
+                                        tableData
+                                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                            .map((row, rowIndex) => (
+                                                <TableRow
+                                                    key={rowIndex}
+                                                    hover
+                                                    sx={{
+                                                        '&:last-child td, &:last-child th': { border: 0 },
+                                                    }}
+                                                >
+                                                    {columns.map((column) => (
+                                                        <TableCell
+                                                            key={column.accessorKey}
+                                                            style={{
+                                                                textAlign: 'center',
+                                                                fontSize: '14px',
+                                                                padding: '8px 12px',
+                                                            }}
+                                                        >
+                                                            {row[column.accessorKey]}
                                                         </TableCell>
-                                                    </TableRow>
-                                                ))
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={columns.length + 1} align="center">
-                                                    No data available
-                                                </TableCell>
-                                            </TableRow>
-                                        )
-                                    ) : null}
+                                                    ))}
+                                                    <TableCell
+                                                        style={{
+                                                            textAlign: 'center',
+                                                            fontSize: '14px',
+                                                            padding: '8px 12px',
+                                                        }}
+                                                    >
+                                                        <IconButton
+                                                            onClick={() => handleDeleteRow(row)}
+                                                            sx={{
+                                                                color: '#e53935',
+                                                                '&:hover': {
+                                                                    backgroundColor: '#fbe9e7',
+                                                                },
+                                                                mr: 1,
+                                                            }}
+                                                        >
+                                                            <FaTrash />
+                                                        </IconButton>
+                                                        <IconButton
+                                                            onClick={() => handleEditRow(row)}
+                                                            sx={{
+                                                                color: '#4caf50',
+                                                                '&:hover': {
+                                                                    backgroundColor: '#e8f5e9',
+                                                                },
+                                                                mr: 1,
+                                                            }}
+                                                        >
+                                                            <FaPencilAlt />
+                                                        </IconButton>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={columns.length + 1} align="center">
+                                                No data available
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
                                 </TableBody>
                             </Table>
                             <TablePagination
@@ -321,24 +300,111 @@ const DevicesModal = () => {
                                 onRowsPerPageChange={handleChangeRowsPerPage}
                                 nextIconButtonText="Next"
                                 backIconButtonText="Previous"
+                                sx={{
+                                    '.MuiTablePagination-toolbar': {
+                                        backgroundColor: '#f5f5f5',
+                                        borderRadius: '4px',
+                                        padding: '8px 16px',
+                                    },
+                                    '.MuiTablePagination-selectRoot': {
+                                        marginRight: '8px',
+                                    },
+                                    '.MuiTablePagination-select': {
+                                        fontSize: '14px',
+                                        fontWeight: 'bold',
+                                    },
+                                    '.MuiTablePagination-displayedRows': {
+                                        fontSize: '14px',
+                                        fontWeight: 'bold',
+                                    },
+                                }}
                             />
                         </TableContainer>
-                    </Box>
-                    <CreateNewDeviceModal
-                        open={createModalOpen}
-                        onClose={() => setCreateModalOpen(false)}
-                        onSubmit={handleCreateNewRow}
-                    />
-
-                    <EditDeviceModal
-                        open={editModalOpen}
-                        onClose={() => setEditModalOpen(false)}
-                        onSubmit={getAllDevices}
-                        values={editModalValues}
-                    />
+                    )}
                 </Box>
-            </Modal>
-        </div>
+
+                {/* Edit device modal */}
+                {/* Note: The EditDeviceModal component is not opening. Please check the implementation of this component. */}
+                <EditDeviceModal
+                    open={editModalOpen}
+                    onClose={() => setEditModalOpen(false)}
+                    onSubmit={() => {
+                        setEditModalOpen(false);
+                        const fetchData = async () => {
+                            try {
+                                const response = await apiContract.getDevices(serverId, shop.id);
+                                setTableData(response.data.data);
+                            } catch (error) {
+                                console.error('Error fetching data:', error);
+                            }
+                        };
+                        fetchData();
+                    }}
+                    values={editModalValues}
+                />
+
+                <Dialog
+                    open={deleteConfirmOpen}
+                    onClose={() => setDeleteConfirmOpen(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                >
+                    <DialogTitle id="alert-dialog-title">
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <Typography variant="h6">Confirm Delete</Typography>
+                            <IconButton
+                                onClick={() => setDeleteConfirmOpen(false)}
+                                sx={{ color: 'text.secondary' }}
+                            >
+                                <FaTimes />
+                            </IconButton>
+                        </Box>
+                    </DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="alert-dialog-description">
+                            Are you sure you want to delete this device?
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setDeleteConfirmOpen(false)} sx={{
+                            color:"#6FC276",
+                            borderColor:"#6FC276",
+                            border:1,
+                            backgroundColor:"#fffff",
+                            '&:hover':{
+                                color:"#ffffff",
+                                backgroundColor:"#6FC276",
+                                transition:0.8
+                            }
+
+                        }} >
+                            Cancel
+                        </Button>
+                        <Button onClick={handleConfirmDelete} sx={{
+                            color:"#6FC276",
+                            borderColor:"#6FC276",
+                            border:1,
+                            backgroundColor:"#fffff",
+                            '&:hover':{
+                                color:"#ffffff",
+                                backgroundColor:"#6FC276",
+                                transition:0.8
+                            }
+
+                        }}  autoFocus>
+                            Delete
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            </Box>
+        </Modal>
     );
 };
+
 export default DevicesModal;

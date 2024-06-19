@@ -351,26 +351,7 @@ export default function Sidenav() {
                 </ListItemButton>
               </ListItem>
 
-              <ListItem disablePadding sx={{ display: 'block' }} onClick={() => {navigate("/devices")}}>
-                <ListItemButton
-                  sx={{
-                    minHeight: 48,
-                    justifyContent: open ? 'initial' : 'center',
-                    px: 2.5,
-                  }}
-                >
-                  <ListItemIcon
-                    sx={{
-                      minWidth: 0,
-                      mr: open ? 3 : 'auto',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <FaMobile />
-                  </ListItemIcon>
-                  <ListItemText primary="Devices" sx={{ opacity: open ? 1 : 0 }} />
-                </ListItemButton>
-              </ListItem>
+             
             </>
           )}
         </List>
