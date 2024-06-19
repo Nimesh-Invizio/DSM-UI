@@ -136,7 +136,6 @@ function Devices() {
         `http://localhost:8070/api/v1/devices/single/${serverId}/${row.id}`
       );
 
-      console.log("RES : ", response);
       if (response && response.data && response.data.data) {
         const updatedData = response.data.data.data;
         console.log("updatedData", updatedData);

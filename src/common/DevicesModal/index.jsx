@@ -19,10 +19,10 @@ import {
     DialogContentText,
     DialogActions,
     Button,
+    TextField,
 } from '@mui/material';
 import { FaPencilAlt, FaTrash, FaTimes, FaBuilding } from 'react-icons/fa';
 import apiContract from '../../pages/device/services/device.service';
-import { EditDeviceModal } from '../../pages/device';
 
 const DevicesModal = ({ open, onClose, shop }) => {
     const [tableData, setTableData] = useState([]);
@@ -33,6 +33,7 @@ const DevicesModal = ({ open, onClose, shop }) => {
     const serverId = JSON.parse(localStorage.getItem('serverDetails')).uniqueId;
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -42,6 +43,15 @@ const DevicesModal = ({ open, onClose, shop }) => {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
     };
+
+    useEffect(() => {
+        if (shop) {
+            setIsLoading(true);
+        } else {
+            setTableData([]);
+            setIsLoading(false);
+        }
+    }, [shop]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -60,9 +70,9 @@ const DevicesModal = ({ open, onClose, shop }) => {
 
     const handleEditRow = async (row) => {
         try {
-            const response = await apiContract.getDeviceById(serverId, row.id);
-            if (response && response.data && response.data.data) {
-                const updatedData = response.data.data.data;
+            const response = await apiContract.getDeviceById(serverId, shop.id, row.id);
+            if (response && response.length === 1) {
+                const updatedData = response[0];
                 setEditModalValues(updatedData);
                 setEditModalOpen(true);
             } else {
@@ -81,7 +91,7 @@ const DevicesModal = ({ open, onClose, shop }) => {
     const handleConfirmDelete = async () => {
         if (deviceToDelete) {
             try {
-                await apiContract.deleteDevice(serverId, shop.id ,deviceToDelete.id);
+                await apiContract.deleteDevice(serverId, shop.id, deviceToDelete.id);
                 const updatedTableData = tableData.filter((device) => device.id !== deviceToDelete.id);
                 setTableData(updatedTableData);
                 setDeleteConfirmOpen(false);
@@ -98,6 +108,29 @@ const DevicesModal = ({ open, onClose, shop }) => {
         { accessorKey: 'apkVersion', header: 'APK Version' },
         { accessorKey: 'modelName', header: 'Model Name' },
     ];
+
+    const handleEditModalSubmit = async () => {
+        try {
+            // Update the device with the new values
+            let editedValues = {
+                brandName:editModalValues.brandName,
+                modelName:editModalValues.modelName,
+                deviceId:editModalValues.deviceId,
+                deviceName : editModalValues.deviceName,
+                apkVersion: editModalValues?.apkVersion || '',
+                shopId : editModalValues.shopId.id
+            }
+            console.log(serverId, shop.id, editModalValues.deviceId, editedValues,"Yyyyyyyyyy");
+            await apiContract.updateDevice(serverId, shop.id, editModalValues.deviceId, editedValues);
+            setEditModalOpen(false);
+
+            // Fetch the updated data
+            const updatedDevices = await apiContract.getDevices(serverId, shop.id);
+            setTableData(updatedDevices);
+        } catch (error) {
+            console.error('Error updating device:', error);
+        }
+    };
 
     return (
         <Modal
@@ -172,7 +205,7 @@ const DevicesModal = ({ open, onClose, shop }) => {
                         >
                             <Typography variant="h6">Please select a shop</Typography>
                         </Box>
-                    ) : tableData.length === 0 ? (
+                    ) : !isLoading ? (
                         <Box
                             sx={{
                                 display: 'flex',
@@ -322,27 +355,104 @@ const DevicesModal = ({ open, onClose, shop }) => {
                         </TableContainer>
                     )}
                 </Box>
-
-                {/* Edit device modal */}
-                {/* Note: The EditDeviceModal component is not opening. Please check the implementation of this component. */}
-                <EditDeviceModal
+                <Modal
                     open={editModalOpen}
                     onClose={() => setEditModalOpen(false)}
-                    onSubmit={() => {
-                        setEditModalOpen(false);
-                        const fetchData = async () => {
-                            try {
-                                const response = await apiContract.getDevices(serverId, shop.id);
-                                setTableData(response.data.data);
-                            } catch (error) {
-                                console.error('Error fetching data:', error);
-                            }
-                        };
-                        fetchData();
-                    }}
-                    values={editModalValues}
-                />
-
+                    aria-labelledby="edit-modal-title"
+                    aria-describedby="edit-modal-description"
+                >
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '80%',
+                            maxWidth: 600,
+                            bgcolor: 'background.paper',
+                            boxShadow: 24,
+                            p: 4,
+                            borderRadius: 2,
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                mb: 2,
+                            }}
+                        >
+                            <Typography id="edit-modal-title" variant="h6" component="h2">
+                                Edit Device: {editModalValues.deviceName || ''}
+                            </Typography>
+                            <IconButton
+                                onClick={() => setEditModalOpen(false)}
+                                sx={{ color: 'text.secondary' }}
+                            >
+                                <FaTimes />
+                            </IconButton>
+                        </Box>
+                        {columns.map((column) => (
+                            <TextField
+                                key={column.accessorKey}
+                                label={column.header}
+                                value={editModalValues[column.accessorKey] || ''}
+                                onChange={(e) =>
+                                    setEditModalValues({
+                                        ...editModalValues,
+                                        [column.accessorKey]: e.target.value,
+                                    })
+                                }
+                                disabled = {column.accessorKey === 'deviceId' ?  true : false }
+                                fullWidth
+                                margin="normal"
+                            />
+                        ))}
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'flex-end',
+                                mt: 2,
+                            }}
+                        >
+                            <Button
+                                onClick={() => setEditModalOpen(false)}
+                                sx={{
+                                    mr: 2,
+                                    color: '#6FC276',
+                                    borderColor: '#6FC276',
+                                    border: 1,
+                                    backgroundColor: '#ffffff',
+                                    '&:hover': {
+                                        color: '#ffffff',
+                                        backgroundColor: '#6FC276',
+                                        transition: 0.8,
+                                    },
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleEditModalSubmit}
+                                color="primary"
+                                sx={{
+                                    mr: 2,
+                                    color: '#6FC276',
+                                    borderColor: '#6FC276',
+                                    border: 1,
+                                    backgroundColor: '#ffffff',
+                                    '&:hover': {
+                                        color: '#ffffff',
+                                        backgroundColor: '#6FC276',
+                                        transition: 0.8,
+                                    },
+                                }}                            >
+                                Save
+                            </Button>
+                        </Box>
+                    </Box>
+                </Modal>
                 <Dialog
                     open={deleteConfirmOpen}
                     onClose={() => setDeleteConfirmOpen(false)}
@@ -373,31 +483,31 @@ const DevicesModal = ({ open, onClose, shop }) => {
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={() => setDeleteConfirmOpen(false)} sx={{
-                            color:"#6FC276",
-                            borderColor:"#6FC276",
-                            border:1,
-                            backgroundColor:"#fffff",
-                            '&:hover':{
-                                color:"#ffffff",
-                                backgroundColor:"#6FC276",
-                                transition:0.8
+                            color: "#6FC276",
+                            borderColor: "#6FC276",
+                            border: 1,
+                            backgroundColor: "#fffff",
+                            '&:hover': {
+                                color: "#ffffff",
+                                backgroundColor: "#6FC276",
+                                transition: 0.8
                             }
 
                         }} >
                             Cancel
                         </Button>
                         <Button onClick={handleConfirmDelete} sx={{
-                            color:"#6FC276",
-                            borderColor:"#6FC276",
-                            border:1,
-                            backgroundColor:"#fffff",
-                            '&:hover':{
-                                color:"#ffffff",
-                                backgroundColor:"#6FC276",
-                                transition:0.8
+                            color: "#6FC276",
+                            borderColor: "#6FC276",
+                            border: 1,
+                            backgroundColor: "#fffff",
+                            '&:hover': {
+                                color: "#ffffff",
+                                backgroundColor: "#6FC276",
+                                transition: 0.8
                             }
 
-                        }}  autoFocus>
+                        }} autoFocus>
                             Delete
                         </Button>
                     </DialogActions>
@@ -406,5 +516,4 @@ const DevicesModal = ({ open, onClose, shop }) => {
         </Modal>
     );
 };
-
 export default DevicesModal;

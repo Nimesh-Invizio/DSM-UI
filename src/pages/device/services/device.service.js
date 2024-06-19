@@ -27,6 +27,14 @@ const apiContract = {
       console.error("Error fetching data:", error);
     }
   },
+  getDeviceById: async (serverId,shopId,id) => {
+    try {
+      const response = await api.get(`servers/${serverId}/shops/${shopId}/devices/${id}`);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  },
   deleteDevice: async (serverId,shopId,id) => {
     try {
       const response = await api.delete(`servers/${serverId}/shops/${shopId}/devices/${id}`);
@@ -35,6 +43,15 @@ const apiContract = {
       console.error("Error fetching data:", error);
     }
   },
+  updateDevice: async (serverId,shopId,deviceId,data) => {
+    try {
+      const response = await api.patch(`servers/${serverId}/shops/${shopId}/devices/${deviceId}`,data);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  },
+
 
 
 };
