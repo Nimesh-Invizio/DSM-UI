@@ -113,14 +113,14 @@ const DevicesModal = ({ open, onClose, shop }) => {
         try {
             // Update the device with the new values
             let editedValues = {
-                brandName:editModalValues.brandName,
-                modelName:editModalValues.modelName,
-                deviceId:editModalValues.deviceId,
-                deviceName : editModalValues.deviceName,
+                brandName: editModalValues.brandName,
+                modelName: editModalValues.modelName,
+                deviceId: editModalValues.deviceId,
+                deviceName: editModalValues.deviceName,
                 apkVersion: editModalValues?.apkVersion || '',
-                shopId : editModalValues.shopId.id
+                shopId: editModalValues.shopId.id
             }
-            console.log(serverId, shop.id, editModalValues.deviceId, editedValues,"Yyyyyyyyyy");
+            console.log(serverId, shop.id, editModalValues.deviceId, editedValues, "Yyyyyyyyyy");
             await apiContract.updateDevice(serverId, shop.id, editModalValues.deviceId, editedValues);
             setEditModalOpen(false);
 
@@ -383,9 +383,25 @@ const DevicesModal = ({ open, onClose, shop }) => {
                                 mb: 2,
                             }}
                         >
-                            <Typography id="edit-modal-title" variant="h6" component="h2">
-                                Edit Device: {editModalValues.deviceName || ''}
-                            </Typography>
+                            <Paper
+                                elevation={3}
+                                sx={{
+                                    p: 1,
+                                    ml: 0,
+                                    borderRadius: 2,
+                                    boxShadow: 3,
+                                    bgcolor: '#6FC276',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <Typography sx={{
+                                    color:"#ffffff"
+                                }} id="edit-modal-title" variant="h6" component="h2">
+                                    Edit Device: {editModalValues.deviceName || ''}
+                                </Typography>
+                            </Paper>
+
                             <IconButton
                                 onClick={() => setEditModalOpen(false)}
                                 sx={{ color: 'text.secondary' }}
@@ -404,7 +420,7 @@ const DevicesModal = ({ open, onClose, shop }) => {
                                         [column.accessorKey]: e.target.value,
                                     })
                                 }
-                                disabled = {column.accessorKey === 'deviceId' ?  true : false }
+                                disabled={column.accessorKey === 'deviceId' ? true : false}
                                 fullWidth
                                 margin="normal"
                             />

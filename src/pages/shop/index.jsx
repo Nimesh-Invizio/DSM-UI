@@ -57,6 +57,8 @@ const Shop = () => {
         return <div>All Images Delete Component</div>;
       case "Stale Images Delete":
         return <div>Stale Images Delete Component</div>;
+      case "Quotation Product Image Sync":
+          return <div>Quotation Product Image Sync Component</div>;
       default:
         return null;
     }
@@ -89,6 +91,7 @@ const Shop = () => {
               <MenuItem value="Shop Features">Shop Features</MenuItem>
               <MenuItem value="Quotation Delete">Quotation Delete</MenuItem>
               <MenuItem value="Products Delete">Products Delete</MenuItem>
+              <MenuItem value="Quotation Product Image Sync">Quotation Product Image Sync</MenuItem>
               <MenuItem value="All Images Delete">All Images Delete</MenuItem>
               <MenuItem value="Stale Images Delete">Stale Images Delete</MenuItem>
             </Select>

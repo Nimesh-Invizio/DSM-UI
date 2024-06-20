@@ -29,6 +29,8 @@ import { MdFolderSpecial } from "react-icons/md";
 import { useParams } from "react-router-dom";
 import { ServerContext } from '../../context/ServerContext';
 import DevicesModal from "../../common/DevicesModal";
+import ShopsModal from "../../common/ShopsModal";
+
 
 function Shops() {
   const [tableData, setTableData] = useState([]);
@@ -39,6 +41,17 @@ function Shops() {
   const [editModalValues, setEditModalValues] = useState({});
   const [devicesModalOpen, setDevicesModalOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState(null);
+
+  const [showShopModal, setShowShopModal] = useState(false);
+
+  const handleOpenShopModal = (shop) => {
+    setShowShopModal(true);
+    setSelectedShop(shop);
+  };
+
+  const handleCloseShopModal = () => {
+    setShowShopModal(false);
+  };
 
   // Pagination
   const [page, setPage] = useState(0);
@@ -153,6 +166,7 @@ function Shops() {
   );
 
 
+
   return (
     <>
       <Navbar />
@@ -229,7 +243,7 @@ function Shops() {
                                 <FaMobile />
                               </IconButton>
                             ) : column.accessorKey === "features" ? (
-                              <IconButton>
+                              <IconButton  onClick={() => handleOpenShopModal(row)}>
                                 <MdFolderSpecial />
                               </IconButton>
                             ) : (
@@ -272,6 +286,8 @@ function Shops() {
               />
             </TableContainer>
           </Box>
+
+          <ShopsModal shopDetails={selectedShop} open={showShopModal} onClose={handleCloseShopModal} />
 
           <CreateNewShopModal
             open={createModalOpen}

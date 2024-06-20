@@ -1,41 +1,32 @@
-
-
 import { Box, InputLabel, MenuItem, Paper, Select, Typography, FormControl, Switch, Button, Grid } from '@mui/material';
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DatePicker } from 'antd';
-import { ShopContext } from '../../../../context/ShopContext';
+import moment from 'moment';
 import apiContract from '../../services/shop.service';
 import SnackAlert from '../../../../common/SnackAlert';
 
-const QuotationCard = ({shopData}) => {
+const QuotationCard = ({ shopData, shopDetails }) => {
     const [itemStatus, setItemStatus] = useState([]);
-    const [shops, setShops] = useState('');
     const [hardDelete, setHardDelete] = useState(false);
     const [imageDelete, setImageDelete] = useState(false);
-    const [date, setDate] = useState(null);
+    const [date, setDate] = useState(moment());
     const [formErrors, setFormErrors] = useState({});
-    const [deleteQuotations,setDeletQuotations] = useState({});
-    const [snackBarStatus,setSnackBarStatus] = useState(false);
-
-    const shop = useContext(ShopContext);
-
+    const [deleteQuotations, setDeleteQuotations] = useState({});
+    const [snackBarStatus, setSnackBarStatus] = useState(false);
+    const serverId = JSON.parse(localStorage.getItem('serverDetails')).uniqueId;
 
     const handleChangeItemStatus = (event) => {
         const value = event.target.value.toUpperCase();
-    
+
         if (value === "ALL") {
             setItemStatus(["", "INSTOCK", "CATALOGUE"]);
-        } 
-        else if (value === "APP"){
+        }
+        else if (value === "APP") {
             setItemStatus([""]);
         }
-         else {
+        else {
             setItemStatus([value]);
         }
-    };
-
-    const handleChangeShops = (event) => {
-        setShops(event.target.value);
     };
 
     const handleHardDeleteChange = (event) => {
@@ -50,18 +41,15 @@ const QuotationCard = ({shopData}) => {
         setDate(date);
     };
 
-    const handleSave = async (event) => {
+    const handleSave = async () => {
         setFormErrors({});
 
         const errors = {};
-        if (!shops) {
-            errors.shops = 'Please select a shop';
-        }
-        if (!itemStatus) {
+        if (!itemStatus.length) {
             errors.itemStatus = 'Please select an item status';
         }
-        if (!date) {
-            errors.date = 'Please select a date';
+        if (!date.isValid()) {
+            errors.date = 'Please select a valid date';
         }
 
         if (Object.keys(errors).length > 0) {
@@ -70,27 +58,22 @@ const QuotationCard = ({shopData}) => {
         }
 
         try {
-            const serverId = 'af92ccfb-ea3c-40f7-b9bc-0f5d055c763c';
-            const shopId = shops;
+            const shopId = shopDetails.id;
             let dataObj = {
                 shopId,
-                date,
-                itemStatus:itemStatus.map(element => element === "All" ? element = "" : element),
+                date: date.toDate(),
+                itemStatus: itemStatus.map(element => element === "All" ? element = "" : element),
                 hardDelete,
                 imageDelete
             }
-            
+
             const response = await apiContract.deleteQuotations(serverId, shopId, dataObj);
             setSnackBarStatus(!snackBarStatus);
-            setDeletQuotations(response);
-
-
+            setDeleteQuotations(response);
         } catch (error) {
-            // Handle the error here
             console.error('Error deleting quotations:', error);
         }
 
-        // Clear form after successful save
         handleClear();
     };
 
@@ -98,52 +81,22 @@ const QuotationCard = ({shopData}) => {
         setHardDelete(false);
         setImageDelete(false);
         setItemStatus('');
-        setShops('');
-        setDate(null);
+        setDate(moment());
     };
 
     useEffect(() => {
         setFormErrors({});
-    }, [shops, itemStatus, date]);
+    }, [itemStatus, date]);
 
     return (
-        <Paper sx={{
-            borderRadius: 2,
-            backgroundColor: "#ffffff",
-            margin: 'auto',
-            maxWidth: 800,
-            padding: 4,
-            boxShadow: 4,
-            marginTop: 5
-        }}>
-            <Grid container spacing={4}>
-                <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={!!formErrors.shops}>
-                        <InputLabel id="shop-select-label">Shops</InputLabel>
-                        <Select
-                            labelId="shop-select-label"
-                            id="shop-select"
-                            value={shops}
-                            label="Shops"
-                            onChange={handleChangeShops}
-                        >
-                            <MenuItem value="">Select a shop</MenuItem>
-                            {shopData.map((shop) => (
-              <MenuItem key={shop.id} value={shop.id}>
-                {shop.shopName}
-              </MenuItem>
-            ))}
-                        </Select>
-                        {formErrors.shops && <Typography variant="caption" color="error">{formErrors.shops}</Typography>}
-                    </FormControl>
-                </Grid>
+        <Paper sx={{ borderRadius: 2, backgroundColor: "#ffffff", margin: 'auto', maxWidth: 800, padding: 4, boxShadow: 4, marginTop: 5 }}>
+            <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
                     <FormControl fullWidth error={!!formErrors.itemStatus}>
                         <InputLabel id="item-status-select-label">Item Status</InputLabel>
                         <Select
                             labelId="item-status-select-label"
                             id="item-status-select"
-                            
                             value={itemStatus || []}
                             label="Item Status"
                             onChange={handleChangeItemStatus}
@@ -168,7 +121,7 @@ const QuotationCard = ({shopData}) => {
                     </FormControl>
                 </Grid>
                 <Grid item xs={12} md={3}>
-                    <Box display="flex" alignItems="center">
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
                         <Typography>Hard Delete</Typography>
                         <Switch
                             checked={hardDelete}
@@ -178,7 +131,7 @@ const QuotationCard = ({shopData}) => {
                     </Box>
                 </Grid>
                 <Grid item xs={12} md={3}>
-                    <Box display="flex" alignItems="center">
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
                         <Typography>Image Delete</Typography>
                         <Switch
                             checked={imageDelete}
@@ -191,15 +144,21 @@ const QuotationCard = ({shopData}) => {
                     <FormControl fullWidth error={!!formErrors.date}>
                         <DatePicker
                             size="middle"
+                            className="modal-datepicker"
                             style={{ width: '100%' }}
                             value={date}
-                            defaultValue={new Date()}
+                            defaultValue={moment()}
                             onChange={handleDateChange}
+                            popupStyle={{ zIndex: 1501 }}
                         />
+
+
+
+
                         {formErrors.date && <Typography variant="caption" color="error">{formErrors.date}</Typography>}
                     </FormControl>
                 </Grid>
-                <Grid item xs={12} md={12} display="flex" justifyContent="flex-end">
+                <Grid item xs={12} display="flex" justifyContent="flex-end">
                     <Button
                         sx={{
                             backgroundColor: "#6FC276",
