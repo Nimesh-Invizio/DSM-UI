@@ -36,11 +36,16 @@ const StaleImageCard = ({ shopData, shopDetails }) => {
                 date: date.toDate(),
             }
 
-            const response = await apiContract.deleteStaleImages(serverId, shopId, dataObj);
-            setSnackBarStatus(!snackBarStatus);
+            const response = await apiContract.staleImagesDelete(serverId, shopId, dataObj);
+            setSnackBarStatus(true);
             setDeleteStaleImages(response);
         } catch (error) {
             console.error('Error deleting stale images:', error);
+            setSnackBarStatus(true);
+            setDeleteStaleImages({
+                status: 500,
+                message: error.message || 'An error occurred while deleting stale images'
+            });
         }
 
         handleClear();
@@ -91,9 +96,7 @@ const StaleImageCard = ({ shopData, shopDetails }) => {
                                 backgroundColor: "#6FC276",
                                 transition: 0.8
                             }
-
                         }}
-                        
                     >
                         Clear
                     </Button>
@@ -110,9 +113,7 @@ const StaleImageCard = ({ shopData, shopDetails }) => {
                                 backgroundColor: "#6FC276",
                                 transition: 0.8
                             }
-
                         }}
-
                     >
                         Delete
                     </Button>
@@ -121,7 +122,7 @@ const StaleImageCard = ({ shopData, shopDetails }) => {
             <SnackAlert
                 type={deleteStaleImages.status === 200 ? 'success' : 'error'}
                 status={snackBarStatus}
-                onClose={() => setSnackBarStatus(!snackBarStatus)}
+                onClose={() => setSnackBarStatus(false)}
                 message={deleteStaleImages?.message || "Stale images deleted successfully"}
             />
         </Paper>

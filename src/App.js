@@ -83,7 +83,7 @@ const App = () => {
         <Route path="/server/company/:uniqueId" element={<Company user={user} />} />
         <Route path="/server/company/shop/:uniqueId/:id" element={<Shops user={user} />} />
         <Route path="/user" element={<User user={user} />} />
-        <Route path="/shops" element={<Shop user={user} />} />
+        <Route path="/shops" element={<Shops user={user} />} />
         <Route path="/devices" element={<Devices user={user} />} />
       </Routes>
     </div>

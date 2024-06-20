@@ -30,6 +30,7 @@ import { useParams } from "react-router-dom";
 import { ServerContext } from '../../context/ServerContext';
 import DevicesModal from "../../common/DevicesModal";
 import ShopsModal from "../../common/ShopsModal";
+import apiContract from "../../pages/shop/services/shop.service";
 
 
 function Shops() {
@@ -41,6 +42,8 @@ function Shops() {
   const [editModalValues, setEditModalValues] = useState({});
   const [devicesModalOpen, setDevicesModalOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState(null);
+  const serverId = JSON.parse(localStorage.getItem('serverDetails')).uniqueId;
+
 
   const [showShopModal, setShowShopModal] = useState(false);
 
@@ -67,18 +70,18 @@ function Shops() {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await Axios.get(
-          `http://localhost:8070/api/v1/servers/shop/${uniqueId}/${id}`
-        );
-        setTableData(response.data.data.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
+    // const fetchData = async () => {
+    //   try {
+    //     const response = await Axios.get(
+    //       `http://localhost:8070/api/v1/servers/shop/${uniqueId}/${id}`
+    //     );
+    //     setTableData(response.data.data.data);
+    //   } catch (error) {
+    //     console.error("Error fetching data:", error);
+    //   }
+    // };
 
-    fetchData();
+    getAllShop();
   }, []);
 
   useEffect(() => {
@@ -87,10 +90,9 @@ function Shops() {
 
   const getAllShop = async () => {
     try {
-      const response = await Axios.get(
-        `http://localhost:8070/api/v1/servers/shop/${uniqueId}/${id}`
-      );
-      setTableData(response.data.data.data);
+      const response = await apiContract.getAllShops(serverId);
+      console.log(response,"kskukwld")
+      setTableData(response.data);
     } catch (error) {
       console.error("Error fetching data:", error);
     }

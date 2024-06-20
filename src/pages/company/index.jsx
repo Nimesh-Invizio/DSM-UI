@@ -217,7 +217,7 @@ const  Company = () => {
                           </TableCell>
                         ))}
                         <TableCell style={{ textAlign: "center" }}>
-                          <Button
+                          {/* <Button
                             variant="contained"
                             size="small"
                             sx={{ background: "#6FC276", color: "white" }}
@@ -228,7 +228,7 @@ const  Company = () => {
                             }
                           >
                             View Shop
-                          </Button>
+                          </Button> */}
                           <IconButton onClick={() => handleEditRow(row)}>
                             <FaPencilAlt></FaPencilAlt>
                           </IconButton>

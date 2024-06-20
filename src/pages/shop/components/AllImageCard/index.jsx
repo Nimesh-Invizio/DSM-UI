@@ -5,7 +5,7 @@ import moment from 'moment';
 import apiContract from '../../services/shop.service';
 import SnackAlert from '../../../../common/SnackAlert';
 
-const AllImageCard = ({ shopData, shopDetails }) => {
+const AllImageCard = ({ shopDetails }) => {
     const [date, setDate] = useState(moment());
     const [formErrors, setFormErrors] = useState({});
     const [deleteAllImages, setDeleteAllImages] = useState({});
@@ -36,11 +36,16 @@ const AllImageCard = ({ shopData, shopDetails }) => {
                 date: date.toDate(),
             }
 
-            const response = await apiContract.deleteAllImages(serverId, shopId, dataObj);
-            setSnackBarStatus(!snackBarStatus);
+            const response = await apiContract.allImagesDelete(serverId, shopId, dataObj);
+            setSnackBarStatus(true);
             setDeleteAllImages(response);
         } catch (error) {
             console.error('Error deleting all images:', error);
+            setSnackBarStatus(true);
+            setDeleteAllImages({
+                status: 500,
+                message: error.message || 'An error occurred while deleting images'
+            });
         }
 
         handleClear();
@@ -78,7 +83,6 @@ const AllImageCard = ({ shopData, shopDetails }) => {
                 </Grid>
                 <Grid item xs={12} display="flex" justifyContent="center">
                     <Button
-                        
                         size="large"
                         onClick={handleClear}
                         sx={{
@@ -92,14 +96,11 @@ const AllImageCard = ({ shopData, shopDetails }) => {
                                 backgroundColor: "#6FC276",
                                 transition: 0.8
                             }
-
                         }}
-                        
                     >
                         Clear
                     </Button>
                     <Button
-                      
                         size="large"
                         onClick={handleSave}
                         sx={{
@@ -113,7 +114,6 @@ const AllImageCard = ({ shopData, shopDetails }) => {
                                 backgroundColor: "#6FC276",
                                 transition: 0.8
                             }
-
                         }}
                     >
                         Delete
@@ -123,7 +123,7 @@ const AllImageCard = ({ shopData, shopDetails }) => {
             <SnackAlert
                 type={deleteAllImages.status === 200 ? 'success' : 'error'}
                 status={snackBarStatus}
-                onClose={() => setSnackBarStatus(!snackBarStatus)}
+                onClose={() => setSnackBarStatus(false)}
                 message={deleteAllImages?.message || "All images deleted successfully"}
             />
         </Paper>

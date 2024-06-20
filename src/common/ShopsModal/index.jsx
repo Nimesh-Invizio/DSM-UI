@@ -69,15 +69,15 @@ const ShopModal = ({ open, onClose, shopDetails }) => {
             case 'Shop Features':
                 return <FeaturesCard shopData={shopData} shopDetails={shopDetails} />;
             case 'Quotation Delete':
-                return <QuotationCard shopData={shopData} shopDetails={shopDetails} />;
+                return <QuotationCard  shopDetails={shopDetails} />;
             case 'Products Delete':
-                return <ProductsCard shopData={shopData} shopDetails={shopDetails} />;
+                return <ProductsCard  shopDetails={shopDetails} />;
             case 'All Images Delete':
-                return <AllImageCard shopData={shopData} shopDetails={shopDetails} />;
+                return <AllImageCard  shopDetails={shopDetails} />;
             case 'Stale Images Delete':
-                return <StaleImageCard shopData={shopData} shopDetails={shopDetails} />;
+                return <StaleImageCard  shopDetails={shopDetails} />;
             case "Quotation Product Image Sync":
-                return <QuotationProductImageSyncCard shopData={shopData} shopDetails={shopDetails} />;
+                return <QuotationProductImageSyncCard  shopDetails={shopDetails} />;
             default:
                 return null;
         }
