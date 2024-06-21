@@ -82,24 +82,7 @@ const StaleImageCard = ({ shopData, shopDetails }) => {
                     </FormControl>
                 </Grid>
                 <Grid item xs={12} display="flex" justifyContent="center">
-                    <Button
-                        size="large"
-                        onClick={handleClear}
-                        sx={{
-                            color: "#6FC276",
-                            borderColor: "#6FC276",
-                            border: 1,
-                            backgroundColor: "#fffff",
-                            marginRight: 2,
-                            '&:hover': {
-                                color: "#ffffff",
-                                backgroundColor: "#6FC276",
-                                transition: 0.8
-                            }
-                        }}
-                    >
-                        Clear
-                    </Button>
+              
                     <Button
                         size="large"
                         onClick={handleSave}

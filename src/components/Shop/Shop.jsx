@@ -101,7 +101,7 @@ function Shops() {
   const handleCreateNewRow = async (values) => {
     try {
       const response = await Axios.post(
-        `http://localhost:8070/api/v1/servers/shop/${uniqueId}`,
+        `http://localhost:8070/api/v1/servers/shop/${serverId}`,
         values
       );
       setTableData([...tableData, response.data]);
@@ -114,7 +114,7 @@ function Shops() {
   const handleEditRow = async (row) => {
     try {
       const response = await Axios.get(
-        `http://localhost:8070/api/v1/servers/singleshop/${uniqueId}/${row.id}`,
+        `http://localhost:8070/api/v1/servers/singleshop/${serverId}/${row.id}`,
         row
       );
 

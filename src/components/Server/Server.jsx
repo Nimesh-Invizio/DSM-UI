@@ -23,7 +23,6 @@ import {
 } from "@mui/material";
 import { FaPencilAlt, FaPlus, FaTrash } from "react-icons/fa";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { Link } from "react-router-dom";
 import Navbar from "../../common/Navbar";
 import Sidenav from "../../common/SideNav";
 import GetData from "../../utils/utility";
@@ -35,7 +34,6 @@ const Server = () => {
   const [editModalValues, setEditModalValues] = useState({});
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [serverId, setServerId] = useState("uni");
   const [loginDetailsDialogOpen, setLoginDetailsDialogOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState("");
   const navigate = useNavigate();
@@ -44,25 +42,21 @@ const Server = () => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await Axios.get(
-          "http://localhost:8070/api/v1/servers/"
-        );
-        setTableData(response.data.data);
-        // let serverIds = response.data.data.map(element => element.uniqueId);
-        // setServerId(serverIds);
-        console.log(response.data.data);
-
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
+
+  const fetchData = async () => {
+    try {
+      const response = await Axios.get(
+        "http://localhost:8070/api/v1/servers/"
+      );
+      setTableData(response.data.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setLoading(false);
+    }
+  };
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -75,39 +69,26 @@ const Server = () => {
 
   const handleCreateNewRow = async (values) => {
     try {
+
+      let status = Boolean(values.status)
       const response = await Axios.post(
         "http://localhost:8070/api/v1/servers/",
         values
       );
-      setTableData([...tableData, response.data]);
-      console.log(response.data);
-      setServerId(response.data.uniqueId);
+      console.log("Server created:", response.data);
+      fetchData(); 
       setCreateModalOpen(false);
     } catch (error) {
       console.error("Error creating a new row:", error);
     }
   };
 
-  const getAllServer = async () => {
-    console.log("SELECTED :", selectedRow);
-    try {
-      const response = await Axios.get("http://localhost:8070/api/v1/servers/");
-      setTableData(response.data.data);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
-
   const handleEditRow = async (row) => {
     try {
       setSelectedRow(row);
-      // Get updated data from the server
       const response = await Axios.get(
         `http://localhost:8070/api/v1/servers/${row.uniqueId}`
       );
-      console.log(response);
-
-      // Update state with the updated data
       if (response && response.data && response.data.data) {
         const updatedData = response.data.data;
         setEditModalValues(updatedData);
@@ -121,32 +102,22 @@ const Server = () => {
   };
 
   const handleOpenLoginDetail = (row) => {
-    console.log("uid", row.uniqueId);
-    setLoginDetailsDialogOpen(true); // Open the dialog
+    setLoginDetailsDialogOpen(true);
     setSelectedRow(row);
-    // setServerId(row.uniqueId); // Set the selected row
   };
 
   const handleLogin = (values) => {
-    console.log(values);
     const apiUrl = `http://localhost:8070/api/v1/servers/diva/login?uniqueId=${selectedRow.uniqueId}`;
-    console.log(apiUrl);
     Axios.post(apiUrl, values)
       .then((response) => {
         console.log("Login successful:", response.data.data);
-        console.log("Token : ", response.data.data.token);
-  
-        // Store server details in localStorage
         localStorage.setItem('serverDetails', JSON.stringify(response.data.data));
-  
         navigate(`/server/company/${selectedRow.uniqueId}`);
       })
       .catch((error) => {
         console.error("Login failed:", error);
-        // Handle login failure here if needed
       });
   };
-  
 
   const handleDeleteRow = async (row) => {
     if (!window.confirm(`Are you sure you want to delete ID: ${row.id}`)) {
@@ -157,9 +128,7 @@ const Server = () => {
       await Axios.delete(
         `http://localhost:8070/api/v1/servers/${row.uniqueId}`
       );
-      const updatedTableData = [...tableData];
-      updatedTableData.splice(row.index, 1);
-      setTableData(updatedTableData);
+      fetchData(); // Refresh the table data
     } catch (error) {
       console.error("Error deleting row:", error);
     }
@@ -225,8 +194,8 @@ const Server = () => {
                 <TableBody>
                   {tableData
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((row, rowIndex) => (
-                      <TableRow key={row.id}>
+                    .map((row) => (
+                      <TableRow key={row.uniqueId}>
                         {columns.map((column) => (
                           <TableCell
                             key={column.accessorKey}
@@ -241,12 +210,11 @@ const Server = () => {
                           >
                             <FaPlus />
                           </IconButton>
-
                           <IconButton onClick={() => handleEditRow(row)}>
-                            <FaPencilAlt></FaPencilAlt>
+                            <FaPencilAlt />
                           </IconButton>
                           <IconButton onClick={() => handleDeleteRow(row)}>
-                            <FaTrash></FaTrash>
+                            <FaTrash />
                           </IconButton>
                         </TableCell>
                       </TableRow>
@@ -261,8 +229,6 @@ const Server = () => {
                 page={page}
                 onPageChange={handleChangePage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
-                nextIconButtonText="Next"
-                backIconButtonText="Previous"
               />
             </TableContainer>
           </Box>
@@ -274,7 +240,7 @@ const Server = () => {
           <EditServerModal
             open={editModalOpen}
             onClose={() => setEditModalOpen(false)}
-            onSubmit={getAllServer}
+            onSubmit={fetchData}
             values={editModalValues}
           />
           <LoginDetailsDialog
@@ -299,11 +265,9 @@ export const CreateNewServerModal = ({ open, onClose, onSubmit }) => {
   });
 
   const handleSubmit = () => {
-    // Implement your validation logic here if needed
     onSubmit(values);
     GetData();
     onClose();
-    window.location.reload();
   };
 
   return (

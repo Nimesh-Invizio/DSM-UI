@@ -63,8 +63,8 @@ const QuotationCard = ({ shopData, shopDetails }) => {
                 shopId,
                 date: date.toDate(),
                 itemStatus: itemStatus.map(element => element === "All" ? element = "" : element),
-                hardDelete,
-                imageDelete
+                hardDelete: hardDelete ? 1 : 0,
+                imageDelete: imageDelete ? 1 : 0
             }
 
             const response = await apiContract.deleteQuotations(serverId, shopId, dataObj);
