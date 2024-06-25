@@ -1,30 +1,22 @@
-import React, { useState, useEffect } from "react";
+// App.js
+import React, { useContext, useEffect, useState } from "react";
 import "./App.css";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import Login from "./components/Login/Login";
 import Server from "./components/Server/Server";
 import User from "./components/User/User";
-import Shop from "./pages/shop";
 import Shops from "./components/Shop/Shop";
 import Sidenav from "./common/SideNav";
 import Navbar from "./common/Navbar";
 import Devices from "./pages/device";
 import { PulseLoader } from "react-spinners";
 import Company from "./pages/company";
+import { AuthContext } from "./context/AuthContext";
 
 const App = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null);
+  const { isLoggedIn, user, onLogout } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setIsLoggedIn(true);
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -39,7 +31,7 @@ const App = () => {
         }
       }, 1000);
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, navigate]);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -47,25 +39,12 @@ const App = () => {
     }
   }, [isLoggedIn, navigate]);
 
-  const handleLogin = (userData) => {
-    setIsLoggedIn(true);
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
-  };
-
-  const onLogout = () => {
-    setIsLoggedIn(false);
-    setUser(null);
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
-
   return (
     <div className="App">
       {isLoggedIn && <Navbar isLoggedIn={isLoggedIn} onLogout={onLogout} user={user} />}
       {isLoggedIn && <Sidenav />}
       <Routes>
-        <Route path="/login" element={<Login onLogin={handleLogin} />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={isLoggedIn ? <Navigate to="/server" /> : <Navigate to="/login" />} />
         <Route
           path="/server"
