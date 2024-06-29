@@ -48,7 +48,7 @@ const Server = () => {
   const fetchData = async () => {
     try {
       const response = await Axios.get(
-        "http://localhost:8070/api/v1/servers/"
+        "http://101.53.133.52:8070/api/v1/servers/"
       );
       setTableData(response.data.data);
       setLoading(false);
@@ -72,7 +72,7 @@ const Server = () => {
 
       let status = Boolean(values.status)
       const response = await Axios.post(
-        "http://localhost:8070/api/v1/servers/",
+        "http://101.53.133.52:8070/api/v1/servers/",
         values
       );
       console.log("Server created:", response.data);
@@ -87,7 +87,7 @@ const Server = () => {
     try {
       setSelectedRow(row);
       const response = await Axios.get(
-        `http://localhost:8070/api/v1/servers/${row.uniqueId}`
+        `http://101.53.133.52:8070/api/v1/servers/${row.uniqueId}`
       );
       if (response && response.data && response.data.data) {
         const updatedData = response.data.data;
@@ -107,7 +107,7 @@ const Server = () => {
   };
 
   const handleLogin = (values) => {
-    const apiUrl = `http://localhost:8070/api/v1/servers/diva/login?uniqueId=${selectedRow.uniqueId}`;
+    const apiUrl = `http://101.53.133.52:8070/api/v1/servers/diva/login?uniqueId=${selectedRow.uniqueId}`;
     Axios.post(apiUrl, values)
       .then((response) => {
         console.log("Login successful:", response.data.data);
@@ -126,7 +126,7 @@ const Server = () => {
 
     try {
       await Axios.delete(
-        `http://localhost:8070/api/v1/servers/${row.uniqueId}`
+        `http://101.53.133.52:8070/api/v1/servers/${row.uniqueId}`
       );
       fetchData(); // Refresh the table data
     } catch (error) {
@@ -354,7 +354,7 @@ export const EditServerModal = ({ open, onClose, onSubmit, values }) => {
   const handleEditSubmit = async () => {
     // Implement your validation logic here if needed
     const res = await Axios.put(
-      `http://localhost:8070/api/v1/servers/${values.uniqueId}`,
+      `http://101.53.133.52:8070/api/v1/servers/${values.uniqueId}`,
       editedValues
     );
     onSubmit(res.data.data);

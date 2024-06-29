@@ -61,7 +61,7 @@ function Devices() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await Axios.get(`http://localhost:8070/api/v1/servers/${serverId}/shops/${selectedShop}/devices`);
+        const response = await Axios.get(`http://101.53.133.52:8070/api/v1/servers/${serverId}/shops/${selectedShop}/devices`);
         setTableData(response.data.data);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -97,7 +97,7 @@ function Devices() {
 
   const getAllDevices = async () => {
     try {
-      const response = await Axios.get(`http://localhost:8070/api/v1/servers/${serverId}/shops/${selectedShop}/devices`);
+      const response = await Axios.get(`http://101.53.133.52:8070/api/v1/servers/${serverId}/shops/${selectedShop}/devices`);
       setTableData(response.data.data);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -106,7 +106,7 @@ function Devices() {
 
   const getAllDevicesApiCall = async () => {
     try {
-      const response = await Axios.get(`http://localhost:8070/api/v1/servers/${serverId}/shops/${selectedShop}/devices`);
+      const response = await Axios.get(`http://101.53.133.52:8070/api/v1/servers/${serverId}/shops/${selectedShop}/devices`);
       return response.data.data;
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -133,7 +133,7 @@ function Devices() {
   const handleEditRow = async (row) => {
     try {
       const response = await Axios.get(
-        `http://localhost:8070/api/v1/devices/single/${serverId}/${row.id}`
+        `http://101.53.133.52:8070/api/v1/devices/single/${serverId}/${row.id}`
       );
 
       if (response && response.data && response.data.data) {
@@ -156,7 +156,7 @@ function Devices() {
 
     try {
       await Axios.delete(
-        `http://localhost:8070/api/v1/devices/delete/${serverId}/${row.id}`
+        `http://101.53.133.52:8070/api/v1/devices/delete/${serverId}/${row.id}`
       );
       const updatedTableData = [...tableData];
       updatedTableData.splice(row.index, 1);
@@ -483,7 +483,7 @@ export const EditDeviceModal = ({ open, onClose, onSubmit, values }) => {
 
  const handleEditSubmit = async () => {
    const res = await Axios.patch(
-     `http://localhost:8070/api/v1/devices/update/${uniqueId}/${values.id}`,
+     `http://101.53.133.52:8070/api/v1/devices/update/${uniqueId}/${values.id}`,
      editedValues
    );
    onSubmit(res);

@@ -73,7 +73,7 @@ function Shops() {
     // const fetchData = async () => {
     //   try {
     //     const response = await Axios.get(
-    //       `http://localhost:8070/api/v1/servers/shop/${uniqueId}/${id}`
+    //       `http://101.53.133.52:8070/api/v1/servers/shop/${uniqueId}/${id}`
     //     );
     //     setTableData(response.data.data.data);
     //   } catch (error) {
@@ -101,7 +101,7 @@ function Shops() {
   const handleCreateNewRow = async (values) => {
     try {
       const response = await Axios.post(
-        `http://localhost:8070/api/v1/servers/shop/${serverId}`,
+        `http://101.53.133.52:8070/api/v1/servers/shop/${serverId}`,
         values
       );
       setTableData([...tableData, response.data]);
@@ -114,7 +114,7 @@ function Shops() {
   const handleEditRow = async (row) => {
     try {
       const response = await Axios.get(
-        `http://localhost:8070/api/v1/servers/singleshop/${serverId}/${row.id}`,
+        `http://101.53.133.52:8070/api/v1/servers/singleshop/${serverId}/${row.id}`,
         row
       );
 
@@ -142,7 +142,7 @@ function Shops() {
 
     try {
       await Axios.delete(
-        `http://localhost:8070/api/v1/servers/deleteshop/${uniqueId}/${row.id}`
+        `http://101.53.133.52:8070/api/v1/servers/deleteshop/${uniqueId}/${row.id}`
       );
       const updatedTableData = [...tableData];
       updatedTableData.splice(row.index, 1);
@@ -585,7 +585,7 @@ export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
 
   const handleEditSubmit = async () => {
     const res = await Axios.patch(
-      `http://localhost:8070/api/v1/servers/shop/${uniqueId}/${values.id}`,
+      `http://101.53.133.52:8070/api/v1/servers/shop/${uniqueId}/${values.id}`,
       editedValues
     );
     onSubmit(res);

@@ -56,7 +56,7 @@
 //     const fetchData = async () => {
 //       try {
 //         const response = await Axios.get(
-//           `http://localhost:8070/api/v1/servers/companies/${uniqueId}`
+//           `http://101.53.133.52:8070/api/v1/servers/companies/${uniqueId}`
 //         );
 //         setTableData(response.data.data);
 //       } catch (error) {
@@ -70,7 +70,7 @@
 //   const getAllCompany = async () => {
 //     try {
 //       const response = await Axios.get(
-//         `http://localhost:8070/api/v1/servers/companies/${uniqueId}`
+//         `http://101.53.133.52:8070/api/v1/servers/companies/${uniqueId}`
 //       );
 //       setTableData(response.data.data);
 //     } catch (error) {
@@ -81,7 +81,7 @@
 //   const handleCreateNewRow = async (values) => {
 //     try {
 //       const response = await Axios.post(
-//         `http://localhost:8070/api/v1/servers/company/${uniqueId}`,
+//         `http://101.53.133.52:8070/api/v1/servers/company/${uniqueId}`,
 //         values
 //       );
 //       setTableData([...tableData, response.data]);
@@ -96,7 +96,7 @@
 //   const handleEditRow = async (row) => {
 //     try {
 //       const response = await Axios.get(
-//         `http://localhost:8070/api/v1/servers/singleComp/${uniqueId}/${row.id}`,
+//         `http://101.53.133.52:8070/api/v1/servers/singleComp/${uniqueId}/${row.id}`,
 //         row
 //       );
 
@@ -121,7 +121,7 @@
 
 //     try {
 //       await Axios.delete(
-//         `http://localhost:8070/api/v1/servers/deletecompany/${uniqueId}/${row.id}`
+//         `http://101.53.133.52:8070/api/v1/servers/deletecompany/${uniqueId}/${row.id}`
 //       );
 //       const updatedTableData = [...tableData];
 //       updatedTableData.splice(row.index, 1);
@@ -285,7 +285,7 @@
 
 //   const handleSubmit = async () => {
 //     // const res = await Axios.get(
-//     //   `http://localhost:8070/api/v1/servers/companies/${uniqueId}`
+//     //   `http://101.53.133.52:8070/api/v1/servers/companies/${uniqueId}`
 //     // );
 //     onSubmit(values);
 //     onClose();
@@ -460,7 +460,7 @@
 
 //   const handleEditSubmit = async () => {
 //     const res = await Axios.patch(
-//       `http://localhost:8070/api/v1/servers/company/${uniqueId}/${values.id}`,
+//       `http://101.53.133.52:8070/api/v1/servers/company/${uniqueId}/${values.id}`,
 //       editedValues
 //     );
 //     onSubmit(res);

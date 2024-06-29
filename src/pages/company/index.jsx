@@ -59,7 +59,7 @@ const  Company = () => {
     const fetchData = async () => {
       try {
         const response = await Axios.get(
-          `http://localhost:8070/api/v1/servers/companies/${serverId}`
+          `http://101.53.133.52:8070/api/v1/servers/companies/${serverId}`
         );
         setTableData(response.data.data);
       } catch (error) {
@@ -76,7 +76,7 @@ const  Company = () => {
   const getAllCompany = async () => {
     try {
       const response = await Axios.get(
-        `http://localhost:8070/api/v1/servers/companies/${serverId}`
+        `http://101.53.133.52:8070/api/v1/servers/companies/${serverId}`
       );
       setTableData(response.data.data);
     } catch (error) {
@@ -88,7 +88,7 @@ const  Company = () => {
   const handleCreateNewRow = async (values) => {
     try {
       const response = await Axios.post(
-        `http://localhost:8070/api/v1/servers/company/${serverId}`,
+        `http://101.53.133.52:8070/api/v1/servers/company/${serverId}`,
         values
       );
       setTableData([...tableData, response.data]);
@@ -103,7 +103,7 @@ const  Company = () => {
   const handleEditRow = async (row) => {
     try {
       const response = await Axios.get(
-        `http://localhost:8070/api/v1/servers/singleComp/${serverId}/${row.id}`,
+        `http://101.53.133.52:8070/api/v1/servers/singleComp/${serverId}/${row.id}`,
         row
       );
 
@@ -128,7 +128,7 @@ const  Company = () => {
 
     try {
       await Axios.delete(
-        `http://localhost:8070/api/v1/servers/deletecompany/${serverId}/${row.id}`
+        `http://101.53.133.52:8070/api/v1/servers/deletecompany/${serverId}/${row.id}`
       );
       const updatedTableData = [...tableData];
       updatedTableData.splice(row.index, 1);
@@ -462,7 +462,7 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
 
   const handleEditSubmit = async () => {
     const res = await Axios.patch(
-      `http://localhost:8070/api/v1/servers/company/${serverId}/${values.id}`,
+      `http://101.53.133.52:8070/api/v1/servers/company/${serverId}/${values.id}`,
       editedValues
     );
     onSubmit(res);

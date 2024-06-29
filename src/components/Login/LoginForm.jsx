@@ -138,7 +138,7 @@ function LoginForm() {
     try {
       setLoading(true);
       const res = await axios.post(
-        "http://localhost:8070/api/v1/auth/login",
+        "http://101.53.133.52:8070/api/v1/auth/login",
         values
       );
   

@@ -55,7 +55,7 @@ const User = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await Axios.get('http://localhost:8070/api/v1/users/');
+        const response = await Axios.get('http://101.53.133.52:8070/api/v1/users/');
         console.log("DATA", response.data.data)
         setTableData(response.data.data);
         setLoading(false);
@@ -71,7 +71,7 @@ const User = () => {
 
   const handleCreateNewRow = async (values) => {
     try {
-      const response = await Axios.post('http://localhost:8070/api/v1/auth/register', values);
+      const response = await Axios.post('http://101.53.133.52:8070/api/v1/auth/register', values);
       setTableData([...tableData, response.data]);
       setCreateModalOpen(false);
     } catch (error) {
@@ -83,7 +83,7 @@ const User = () => {
     console.log('Edit row', row.uniqueId);
     setEditModalOpen(true);
     setEditModalValues(row);
-    console.log(`http://localhost:8070/api/v1/users/${row.uniqueId}`)
+    console.log(`http://101.53.133.52:8070/api/v1/users/${row.uniqueId}`)
 
   };
 
@@ -96,7 +96,7 @@ const User = () => {
       // console.log("Values: ", values);
   
       // Assuming the uniqueId is available in the values object
-      const response = await Axios.patch(`http://localhost:8070/api/v1/users/${values.uniqueId}`, values);
+      const response = await Axios.patch(`http://101.53.133.52:8070/api/v1/users/${values.uniqueId}`, values);
   
       console.log('Update Response:', response.data); // Log the response
       
@@ -133,7 +133,7 @@ const User = () => {
       }
 
       try {
-        await Axios.delete(`http://localhost:8070/api/v1/users/${row.uniqueId}`);
+        await Axios.delete(`http://101.53.133.52:8070/api/v1/users/${row.uniqueId}`);
         const updatedTableData = [...tableData];
         updatedTableData.splice(row.index, 1);
         setTableData(updatedTableData);
