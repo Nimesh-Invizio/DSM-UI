@@ -24,11 +24,11 @@ const App = () => {
       setTimeout(() => {
         setIsLoading(false);
         const serverDetails = localStorage.getItem("serverDetails");
-        if (serverDetails) {
+        console.log(serverDetails,window.location.pathname,"jkhaerekjtenrnrsjer");
+        if (serverDetails && window.location.pathname === '/server') {
           navigate("/companies");
-        } else {
-          navigate("/server");
         }
+
       }, 1000);
     }
   }, [isLoggedIn, navigate]);

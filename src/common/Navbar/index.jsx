@@ -26,13 +26,15 @@ const AppBar = styled(MuiAppBar, {
   boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
 }));
 
-export default function Navbar() {
+export default function Navbar({}) {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState(null);
   const updateOpen = useAppStore((state) => state.updateOpen);
   const dopen = useAppStore((state) => state.dopen);
   const navigate = useNavigate();
   const { isLoggedIn, user, onLogout } = React.useContext(AuthContext);
+
+  console.log(isLoggedIn,onLogout(),"sdfsasdasdsasfd");
 
   const isMenuOpen = Boolean(anchorEl);
   const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);

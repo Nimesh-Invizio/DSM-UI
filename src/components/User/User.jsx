@@ -1,6 +1,4 @@
-import Sidenav from "../../common/SideNav";
-import Navbar from "../../common/Navbar";
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Axios from 'axios';
 import {
   Box,
@@ -8,9 +6,9 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   IconButton,
-  TablePagination,
   Table,
   TableBody,
   TableCell,
@@ -18,61 +16,37 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Grid,
-  Input,
-  InputLabel,
-  InputAdornment
+  TextField,
+  Typography,
 } from '@mui/material';
-import { FaPencilAlt, FaPlus, FaTrash } from 'react-icons/fa';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { Link } from "react-router-dom";
+import { Edit, Delete, Add, Warning } from '@mui/icons-material';
+import Sidenav from "../../common/SideNav";
 
 const User = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [editModalValues, setEditModalValues] = useState({});
+  const [deleteModalValues, setDeleteModalValues] = useState({});
   const [tableData, setTableData] = useState([]);
-  const [validationErrors, setValidationErrors] = useState({});
-  const [loading, setLoading] = useState(true);
-
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-
-  //Pagination Start
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-
-  //----------------------------------------------------------------
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await Axios.get('http://101.53.133.52:8070/api/v1/users/');
-        console.log("DATA", response.data.data)
-        setTableData(response.data.data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setLoading(false); // Make sure to set loading to false in case of an error
-      }
-    };
-
     fetchData();
   }, []);
 
+  const fetchData = async () => {
+    try {
+      const response = await Axios.get('http://localhost:8070/api/v1/users/');
+      setTableData(response.data.data);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
 
   const handleCreateNewRow = async (values) => {
     try {
-      const response = await Axios.post('http://101.53.133.52:8070/api/v1/auth/register', values);
-      setTableData([...tableData, response.data]);
+      await Axios.post('http://localhost:8070/api/v1/auth/register', values);
+      fetchData();
       setCreateModalOpen(false);
     } catch (error) {
       console.error('Error creating a new row:', error);
@@ -80,270 +54,273 @@ const User = () => {
   };
 
   const handleEditRow = (row) => {
-    console.log('Edit row', row.uniqueId);
     setEditModalOpen(true);
     setEditModalValues(row);
-    console.log(`http://101.53.133.52:8070/api/v1/users/${row.uniqueId}`)
-
   };
 
-  const exitEditingMode = () => {
-    setEditModalOpen(false);
-  };
-
-  const handleSaveRowEdits = async ({ exitEditingMode, values }) => {
+  const handleSaveRowEdits = async (editedValues) => {
     try {
-      // console.log("Values: ", values);
-  
-      // Assuming the uniqueId is available in the values object
-      const response = await Axios.patch(`http://101.53.133.52:8070/api/v1/users/${values.uniqueId}`, values);
-  
-      console.log('Update Response:', response.data); // Log the response
-      
-  
-      // Update the existing row in the state without creating a new object
-      setTableData((prevTableData) => {
-        const updatedTableData = [...prevTableData];
-        console.log('Updated tableData:', updatedTableData);
-
-        const index = updatedTableData.findIndex((row) => row.uniqueId === values.uniqueId);
-        if (index !== -1) {
-          // Update the existing row values with editedValues
-          updatedTableData[index] = { ...updatedTableData[index], ...values.editedValues };
-        }
-        return updatedTableData;
-      });
-  
-      exitEditingMode();
-  
-      // Close the edit modal
+      await Axios.patch(`http://localhost:8070/api/v1/users/${editedValues.uniqueId}`, editedValues);
+      fetchData();
       setEditModalOpen(false);
     } catch (error) {
       console.error('Error saving row edits:', error);
     }
   };
-  
-  
-  
 
-  const handleDeleteRow = useCallback(
-    async (row) => {
-      if (!window.confirm(`Are you sure you want to delete ID: ${row.id}`)) {
-        return;
-      }
+  const handleDeleteRow = (row) => {
+    setDeleteModalOpen(true);
+    setDeleteModalValues(row);
+  };
 
-      try {
-        await Axios.delete(`http://101.53.133.52:8070/api/v1/users/${row.uniqueId}`);
-        const updatedTableData = [...tableData];
-        updatedTableData.splice(row.index, 1);
-        setTableData(updatedTableData);
-      } catch (error) {
-        console.error('Error deleting row:', error);
-      }
-    },
-    [tableData],
-  );
-
-  const columns = useMemo(() => [
-    // Define your columns as per your data structure
-    { accessorKey: 'id', header: 'ID', enableEditing: false },
-    { accessorKey: 'username', header: 'Username' },
-    { accessorKey: 'email', header: 'E-Mail' },
-    // { accessorKey: 'createdAt', header: 'Date of Creation' }
-  ], []);
+  const confirmDeleteRow = async () => {
+    try {
+      await Axios.delete(`http://localhost:8070/api/v1/users/${deleteModalValues.uniqueId}`);
+      fetchData();
+      setDeleteModalOpen(false);
+    } catch (error) {
+      console.error('Error deleting row:', error);
+    }
+  };
 
   return (
-    <>
-      <Navbar />
-      <Box height={60} />
-      <Box sx={{ display: 'flex' }}>
-        <Sidenav />
-        <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-          <Button
-            color="primary"
-            onClick={() => setCreateModalOpen(true)}
-            variant="contained"
-            sx={{ ml: 'auto', display: 'flex', justifyContent: 'flex-end' }}
-          >
-            + Add User
-          </Button>
-          <Box sx={{ p: 3 }}>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    {columns.map((column) => (
-                      <TableCell key={column.accessorKey} style={{ background: '#1976d2', color: 'white', fontSize: '20px', textAlign: 'center' }}>{column.header}</TableCell>
-                    ))}
-                    <TableCell style={{ background: '#1976d2', color: 'white', fontSize: '20px', textAlign: 'center' }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {console.log("tableData type:", typeof tableData)}
-                  {tableData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, rowIndex) => (
-                    <TableRow key={row.id}>
-                      {columns.map((column) => (
-                        <TableCell key={column.accessorKey} style={{ textAlign: "center" }}>{row[column.accessorKey]}</TableCell>
-                      ))}
-                      <TableCell style={{ textAlign: "center" }}>
-                        <IconButton onClick={() => handleEditRow(row)}><FaPencilAlt></FaPencilAlt></IconButton>
-                        <IconButton onClick={() => handleDeleteRow(row)}><FaTrash></FaTrash></IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <TablePagination
-                rowsPerPageOptions={[5, 10, 25]}
-                component="div"
-                count={tableData.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                nextIconButtonText="Next"
-                backIconButtonText="Previous"
-              />
-            </TableContainer>
-
+    <Box sx={{ display: 'flex', backgroundColor: '#FFFFFF', minHeight: '100vh' }}>
+      <Sidenav />
+      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+        <Paper sx={{ p: 2 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h5">User Management</Typography>
+            <Button
+              startIcon={<Add />}
+              onClick={() => setCreateModalOpen(true)}
+              variant="contained"
+              sx={{ backgroundColor: '#6FC276', '&:hover': { backgroundColor: '#5DA266' } }}
+            >
+              Add User
+            </Button>
           </Box>
-          <CreateNewUserModal
-            open={createModalOpen}
-            onClose={() => setCreateModalOpen(false)}
-            onSubmit={handleCreateNewRow}
-          />
-
-          <EditServerModal
-            open={editModalOpen}
-            onClose={() => setEditModalOpen(false)}
-            onSubmit={(editedValues) => handleSaveRowEdits({ exitEditingMode, values: { ...editModalValues, ...editedValues } })}
-            values={editModalValues}
-          />``
-        </Box>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ backgroundColor: '#6FC276', color: 'white', fontWeight: 'bold' }}>ID</TableCell>
+                  <TableCell sx={{ backgroundColor: '#6FC276', color: 'white', fontWeight: 'bold' }}>Username</TableCell>
+                  <TableCell sx={{ backgroundColor: '#6FC276', color: 'white', fontWeight: 'bold' }}>E-Mail</TableCell>
+                  <TableCell sx={{ backgroundColor: '#6FC276', color: 'white', fontWeight: 'bold' }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {tableData.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell>{row.id}</TableCell>
+                    <TableCell>{row.username}</TableCell>
+                    <TableCell>{row.email}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => handleEditRow(row)} color="primary">
+                        <Edit />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteRow(row)} color="error">
+                        <Delete />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       </Box>
-    </>
+      <CreateNewUserModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSubmit={handleCreateNewRow}
+      />
+      <EditUserModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        onSubmit={handleSaveRowEdits}
+        values={editModalValues}
+      />
+      <DeleteUserModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDeleteRow}
+        user={deleteModalValues}
+      />
+    </Box>
   );
 };
 
-export const CreateNewUserModal = ({ open, onClose, onSubmit }) => {
-  const [values, setValues] = useState({ email: '', username: '', password: '', });
+const CreateNewUserModal = ({ open, onClose, onSubmit }) => {
+  const [values, setValues] = useState({ email: '', username: '', password: '' });
 
   const handleSubmit = () => {
-    // Implement your validation logic here if needed
     onSubmit(values);
     onClose();
   };
 
   return (
-    <>
-      <Dialog open={open}>
-        <DialogTitle>Create New User</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2}>
-            <Grid item xs={4}>
-              <InputLabel>E-Mail</InputLabel>
-              <Input
-                value={values.email}
-                onChange={(e) => setValues({ ...values, email: e.target.value })}
-                fullWidth
-              />
-            </Grid>
-
-            <Grid item xs={4}>
-              <InputLabel>Username</InputLabel>
-              <Input
-                value={values.username}
-                onChange={(e) => setValues({ ...values, username: e.target.value })}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={4}>
-              <InputLabel>Password</InputLabel>
-              <Input
-                value={values.password}
-                onChange={(e) => setValues({ ...values, password: e.target.value })}
-                fullWidth
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button color="primary" onClick={handleSubmit} variant="contained">
-            Create
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-
-    </>
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Create New User</DialogTitle>
+      <DialogContent>
+        <TextField
+          label="E-Mail"
+          value={values.email}
+          onChange={(e) => setValues({ ...values, email: e.target.value })}
+          fullWidth
+          margin="normal"
+        />
+        <TextField
+          label="Username"
+          value={values.username}
+          onChange={(e) => setValues({ ...values, username: e.target.value })}
+          fullWidth
+          margin="normal"
+        />
+        <TextField
+          label="Password"
+          type="password"
+          value={values.password}
+          onChange={(e) => setValues({ ...values, password: e.target.value })}
+          fullWidth
+          margin="normal"
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleSubmit} variant="contained" sx={{ backgroundColor: '#6FC276', '&:hover': { backgroundColor: '#5DA266' } }}>
+          Create
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
-export const EditServerModal = ({ open, onClose, onSubmit, values }) => {
-  const [editedValues, setEditedValues] = useState(values);
-  const [editModalValues, setEditModalValues] = useState({});
+const EditUserModal = ({ open, onClose, onSubmit, values }) => {
+  const [editedValues, setEditedValues] = useState({});
+
+  useEffect(() => {
+    // Update editedValues when the modal opens with new values
+    if (open) {
+      setEditedValues({ ...values });
+    }
+  }, [open, values]);
 
   const handleEditSubmit = () => {
-    // Implement your validation logic here if needed
-    onSubmit({ values, editedValues });
+    onSubmit(editedValues);
     onClose();
   };
 
-  const handleInputChange = (field, value) => {
-    setEditedValues((prevValues) => ({
-      ...prevValues,
-      [field]: value,
-    }));
-  
-    setEditModalValues((prevValues) => ({
-      ...prevValues,
-      [field]: value,
-    }));
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditedValues(prev => ({ ...prev, [name]: value }));
   };
-  
 
   return (
-    <>
-      <Dialog open={open}>
-        <DialogTitle>Edit User</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2}>
-            <Grid item xs={4}>
-              <InputLabel>E-Mail</InputLabel>
-              <Input
-                value={editedValues.email}
-                onChange={(e) => handleInputChange( 'email', e.target.value)}
-                fullWidth
-              />
-            </Grid>
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Edit User</DialogTitle>
+      <DialogContent>
+        <TextField
+          label="E-Mail"
+          name="email"
+          value={editedValues.email || ''}
+          onChange={handleInputChange}
+          fullWidth
+          margin="normal"
+        />
+        <TextField
+          label="Username"
+          name="username"
+          value={editedValues.username || ''}
+          onChange={handleInputChange}
+          fullWidth
+          margin="normal"
+        />
+       
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button 
+          onClick={handleEditSubmit} 
+          variant="contained" 
+          sx={{ 
+            backgroundColor: '#6FC276', 
+            '&:hover': { backgroundColor: '#5DA266' } 
+          }}
+        >
+          Save Changes
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
-            <Grid item xs={4}>
-              <InputLabel>Username</InputLabel>
-              <Input
-                value={editedValues.username}
-                onChange={(e) => handleInputChange('username', e.target.value )}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={4}>
-              <InputLabel>Change Password</InputLabel>
-              <Input
-                value={editedValues.password}
-                onChange={(e) => handleInputChange('password',  e.target.value )}
-                fullWidth
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button color="primary" onClick={handleEditSubmit} variant="contained">
-            Save Changes
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
+const DeleteUserModal = ({ open, onClose, onConfirm, user }) => {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      PaperProps={{
+        style: {
+          borderRadius: '8px',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+          maxWidth: '400px',
+        },
+      }}
+    >
+      <DialogTitle 
+        sx={{
+          backgroundColor: '#f8d7da',
+          color: '#721c24',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '16px',
+        }}
+      >
+        <Warning sx={{ mr: 1, fontSize: 28 }} />
+        Confirm Deletion
+      </DialogTitle>
+      <DialogContent sx={{ pt: 2, pb: 1 }}>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          Are you sure you want to delete the user <strong>{user.username}</strong>?
+        </Typography>
+        <Box 
+          sx={{
+            backgroundColor: '#f8f9fa',
+            borderRadius: '4px',
+            padding: '12px',
+            fontSize: '0.875rem',
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ mb: 1, color: '#495057' }}>User Details:</Typography>
+          <Typography variant="body2" sx={{ mb: 0.5 }}>ID: {user.id}</Typography>
+          <Typography variant="body2" sx={{ mb: 0.5 }}>Username: {user.username}</Typography>
+          <Typography variant="body2">Email: {user.email}</Typography>
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ padding: '16px', justifyContent: 'flex-end' }}>
+        <Button 
+          onClick={onClose}
+          sx={{
+            color: '#6c757d',
+            '&:hover': { backgroundColor: '#f8f9fa' },
+          }}
+        >
+          Cancel
+        </Button>
+        <Button 
+          onClick={onConfirm}
+          variant="contained" 
+          sx={{
+            backgroundColor: '#dc3545',
+            '&:hover': { backgroundColor: '#c82333' },
+            fontWeight: 'bold',
+          }}
+        >
+          Delete User
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

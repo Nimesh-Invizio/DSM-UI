@@ -120,7 +120,6 @@ const DevicesModal = ({ open, onClose, shop }) => {
                 apkVersion: editModalValues?.apkVersion || '',
                 shopId: editModalValues.shopId.id
             }
-            console.log(serverId, shop.id, editModalValues.deviceId, editedValues, "Yyyyyyyyyy");
             await apiContract.updateDevice(serverId, shop.id, editModalValues.deviceId, editedValues);
             setEditModalOpen(false);
 
