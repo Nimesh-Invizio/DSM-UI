@@ -25,7 +25,7 @@ import {
 import { FaPencilAlt, FaTrash } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 
-const  Company = () => {
+const Company = () => {
   const [tableData, setTableData] = useState([]);
   const navigate = useNavigate();
 
@@ -45,9 +45,13 @@ const  Company = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [companyToDelete, setCompanyToDelete] = useState(null);
+
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
+
 
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
@@ -59,9 +63,9 @@ const  Company = () => {
     const fetchData = async () => {
       try {
         const response = await Axios.get(
-          `http://101.53.133.52:8070/api/v1/servers/companies/${serverId}`
+          `${process.env.REACT_APP_API_BASE_URL}/servers/companies/${serverId}`
         );
-        setTableData(response.data.data);
+        setTableData(response.data.data || []);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -76,7 +80,7 @@ const  Company = () => {
   const getAllCompany = async () => {
     try {
       const response = await Axios.get(
-        `http://101.53.133.52:8070/api/v1/servers/companies/${serverId}`
+        `${process.env.REACT_APP_API_BASE_URL}/servers/companies/${serverId}`
       );
       setTableData(response.data.data);
     } catch (error) {
@@ -88,7 +92,7 @@ const  Company = () => {
   const handleCreateNewRow = async (values) => {
     try {
       const response = await Axios.post(
-        `http://101.53.133.52:8070/api/v1/servers/company/${serverId}`,
+        `${process.env.REACT_APP_API_BASE_URL}/servers/company/${serverId}`,
         values
       );
       setTableData([...tableData, response.data]);
@@ -103,7 +107,7 @@ const  Company = () => {
   const handleEditRow = async (row) => {
     try {
       const response = await Axios.get(
-        `http://101.53.133.52:8070/api/v1/servers/singleComp/${serverId}/${row.id}`,
+        `${process.env.REACT_APP_API_BASE_URL}/servers/singleComp/${serverId}/${row.id}`,
         row
       );
 
@@ -122,19 +126,37 @@ const  Company = () => {
   };
 
   const handleDeleteRow = async (row) => {
-    if (!window.confirm(`Are you sure you want to delete ID: ${row.id}`)) {
-      return;
-    }
+    setCompanyToDelete(row);
+    setDeleteModalOpen(true);
 
-    try {
-      await Axios.delete(
-        `http://101.53.133.52:8070/api/v1/servers/deletecompany/${serverId}/${row.id}`
-      );
-      const updatedTableData = [...tableData];
-      updatedTableData.splice(row.index, 1);
-      setTableData(updatedTableData);
-    } catch (error) {
-      console.error("Error deleting row:", error);
+    // if (!window.confirm(`Are you sure you want to delete ID: ${row.id}`)) {
+    //   return;
+    // }
+
+    // try {
+    //   await Axios.delete(
+    //     `${process.env.REACT_APP_API_BASE_URL}/servers/deletecompany/${serverId}/${row.id}`
+    //   );
+    //   const updatedTableData = [...tableData];
+    //   updatedTableData.splice(row.index, 1);
+    //   setTableData(updatedTableData);
+    // } catch (error) {
+    //   console.error("Error deleting row:", error);
+    // }
+  };
+  const confirmDelete = async () => {
+    if (companyToDelete) {
+      try {
+        await Axios.delete(
+          `${process.env.REACT_APP_API_BASE_URL}/servers/deletecompany/${serverId}/${companyToDelete.id}`
+        );
+        const updatedTableData = tableData.filter(row => row.id !== companyToDelete.id);
+        setTableData(updatedTableData);
+        setDeleteModalOpen(false);
+        setCompanyToDelete(null);
+      } catch (error) {
+        console.error("Error deleting row:", error);
+      }
     }
   };
 
@@ -204,41 +226,38 @@ const  Company = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {tableData
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((row, rowIndex) => (
-                      <TableRow key={row.id}>
-                        {columns.map((column) => (
-                          <TableCell
-                            key={column.accessorKey}
-                            style={{ textAlign: "center" }}
-                          >
-                            {row[column.accessorKey]}
-                          </TableCell>
-                        ))}
-                        <TableCell style={{ textAlign: "center" }}>
-                          {/* <Button
-                            variant="contained"
-                            size="small"
-                            sx={{ background: "#6FC276", color: "white" }}
-                            onClick={() =>
-                              navigate(
-                                `/server/company/shop/${serverId}/${row.id}`
-                              )
-                            }
-                          >
-                            View Shop
-                          </Button> */}
-                          <IconButton onClick={() => handleEditRow(row)}>
-                            <FaPencilAlt></FaPencilAlt>
-                          </IconButton>
-                          <IconButton onClick={() => handleDeleteRow(row)}>
-                            <FaTrash></FaTrash>
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
+  {tableData && tableData.length > 0 ? (
+    tableData
+      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+      .map((row, rowIndex) => (
+        <TableRow key={row.id}>
+          {columns.map((column) => (
+            <TableCell
+              key={column.accessorKey}
+              style={{ textAlign: "center" }}
+            >
+              {row[column.accessorKey]}
+            </TableCell>
+          ))}
+          <TableCell style={{ textAlign: "center" }}>
+            <IconButton onClick={() => handleEditRow(row)}>
+              <FaPencilAlt></FaPencilAlt>
+            </IconButton>
+            <IconButton onClick={() => handleDeleteRow(row)}>
+              <FaTrash></FaTrash>
+            </IconButton>
+          </TableCell>
+        </TableRow>
+      ))
+  ) : (
+    <TableRow>
+      <TableCell colSpan={columns.length + 1} style={{ textAlign: "center" }}>
+        No data available
+      </TableCell>
+    </TableRow>
+  )}
+</TableBody>
+
               </Table>
 
               <TablePagination
@@ -268,9 +287,39 @@ const  Company = () => {
           />
         </Box>
       </Box>
+      <DeleteConfirmationModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+      />
+
+
     </>
   );
 }
+
+export const DeleteConfirmationModal = ({ open, onClose, onConfirm }) => {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Confirm Deletion</DialogTitle>
+      <DialogContent>
+        Are you sure you want to delete this company?
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} sx={{ color: "#6FC276" }}>
+          No
+        </Button>
+        <Button
+          onClick={onConfirm}
+          variant="contained"
+          sx={{ background: "#6FC276", color: "white" }}
+        >
+          Yes
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 export const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
   const [values, setValues] = useState({
@@ -292,7 +341,6 @@ export const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
   const handleSubmit = async () => {
     onSubmit(values);
     onClose();
-    window.location.reload();
   };
 
   return (
@@ -462,7 +510,7 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
 
   const handleEditSubmit = async () => {
     const res = await Axios.patch(
-      `http://101.53.133.52:8070/api/v1/servers/company/${serverId}/${values.id}`,
+      `${process.env.REACT_APP_API_BASE_URL}/servers/company/${serverId}/${values.id}`,
       editedValues
     );
     onSubmit(res);
@@ -512,8 +560,8 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
             <Input
               value={
                 editedValues &&
-                editedValues.addressId &&
-                editedValues.addressId.addressLine1
+                  editedValues.addressId &&
+                  editedValues.addressId.addressLine1
                   ? editedValues.addressId.addressLine1
                   : ""
               }
@@ -532,8 +580,8 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
             <Input
               value={
                 editedValues &&
-                editedValues.addressId &&
-                editedValues.addressId.addressLine2
+                  editedValues.addressId &&
+                  editedValues.addressId.addressLine2
                   ? editedValues.addressId.addressLine2
                   : ""
               }
@@ -552,8 +600,8 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
             <Input
               value={
                 editedValues &&
-                editedValues.addressId &&
-                editedValues.addressId.state
+                  editedValues.addressId &&
+                  editedValues.addressId.state
                   ? editedValues.addressId.state
                   : ""
               }
@@ -569,8 +617,8 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
             <Input
               value={
                 editedValues &&
-                editedValues.addressId &&
-                editedValues.addressId.city
+                  editedValues.addressId &&
+                  editedValues.addressId.city
                   ? editedValues.addressId.city
                   : ""
               }
@@ -586,8 +634,8 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
             <Input
               value={
                 editedValues &&
-                editedValues.addressId &&
-                editedValues.addressId.country
+                  editedValues.addressId &&
+                  editedValues.addressId.country
                   ? editedValues.addressId.country
                   : ""
               }
@@ -603,8 +651,8 @@ export const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
             <Input
               value={
                 editedValues &&
-                editedValues.addressId &&
-                editedValues.addressId.pinCode
+                  editedValues.addressId &&
+                  editedValues.addressId.pinCode
                   ? editedValues.addressId.pinCode
                   : ""
               }

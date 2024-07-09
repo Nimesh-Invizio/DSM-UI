@@ -34,7 +34,6 @@ export default function Navbar({}) {
   const navigate = useNavigate();
   const { isLoggedIn, user, onLogout } = React.useContext(AuthContext);
 
-  console.log(isLoggedIn,onLogout(),"sdfsasdasdsasfd");
 
   const isMenuOpen = Boolean(anchorEl);
   const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
@@ -67,8 +66,7 @@ export default function Navbar({}) {
     navigate("/server", { replace: true });
   };
 
-  const serverDetails = JSON.parse(localStorage.getItem('serverDetails'));
-
+  const serverDetails = localStorage.getItem('serverDetails') ? JSON.parse(localStorage.getItem('serverDetails')) : null;
   const menuId = "primary-search-account-menu";
   const renderMenu = (
     <Menu

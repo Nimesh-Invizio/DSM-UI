@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { FaUser, FaLock } from "react-icons/fa";
+import React, { useState, useEffect, useContext } from "react";
+import { FaUser, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import styled from "styled-components";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 import { PulseLoader } from "react-spinners";
-import { green, red } from "@mui/material/colors";
+import { AuthContext } from "../../context/AuthContext"; // Ensure this path is correct
 
 const LoginFormContainer = styled.div`
   display: flex;
@@ -111,50 +111,52 @@ const LoadingContainer = styled.div`
   background-color: #ffffff;
 `;
 
+const PasswordToggleIcon = styled.span`
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  color: #6fc276;
+  cursor: pointer;
+`;
+
+
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
 function LoginForm() {
   const navigate = useNavigate();
+  const { onLogin } = useContext(AuthContext);
   const [values, setValues] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
 
-
-  useEffect(() => {
-    if (isLoggedIn && success) {
-      window.location.href = "/server";
-      console.log("Navigating to /server");
-    }
-  }, [isLoggedIn, success, navigate]);
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
       const res = await axios.post(
-        "http://101.53.133.52:8070/api/v1/auth/login",
+        `${process.env.REACT_APP_API_BASE_URL}/auth/login`,
         values
       );
-  
+
 
       if (res.data.token) {
         localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        onLogin(res.data.user); //
         setSuccess("Login successful!");
         setSnackbarOpen(true);
-        setIsLoggedIn(true);
-
-
+        setTimeout(() => {
+          navigate("/server");
+        }, 1000); 
       } else {
-        setError("Invalid credentials");
+        setError(res.data.message);
         setSnackbarOpen(true);
-
       }
     } catch (error) {
       setError("Something went wrong. Please try again later.");
@@ -163,10 +165,6 @@ function LoginForm() {
       setLoading(false);
     }
   };
-
-
-
-
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -177,6 +175,10 @@ function LoginForm() {
 
     return () => clearTimeout(timer);
   }, [snackbarOpen]);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   if (loading) {
     return (
@@ -200,12 +202,12 @@ function LoginForm() {
               onChange={(e) => setValues({ ...values, email: e.target.value })}
               required
             />
-            <LoginFormIcon />
+            <LoginFormIcon as={FaUser} />
           </LoginFormInputBox>
 
           <LoginFormInputBox>
             <LoginFormInput
-              type="password"
+              type={showPassword ? "text" : "password"}
               id="password"
               placeholder="Password"
               value={values.password}
@@ -214,7 +216,9 @@ function LoginForm() {
               }
               required
             />
-            <LoginFormIcon icon={FaLock} />
+            <PasswordToggleIcon onClick={togglePasswordVisibility}>
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </PasswordToggleIcon>
           </LoginFormInputBox>
 
           <RememberForgotContainer>

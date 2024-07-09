@@ -101,7 +101,7 @@ function Shops() {
   const handleCreateNewRow = async (values) => {
     try {
       const response = await Axios.post(
-        `http://101.53.133.52:8070/api/v1/servers/shop/${serverId}`,
+        `${process.env.REA}/servers/shop/${serverId}`,
         values
       );
       setTableData([...tableData, response.data]);
@@ -114,7 +114,7 @@ function Shops() {
   const handleEditRow = async (row) => {
     try {
       const response = await Axios.get(
-        `http://101.53.133.52:8070/api/v1/servers/singleshop/${serverId}/${row.id}`,
+        `${process.env.REACT_APP_API_BASE_URL}/servers/singleshop/${serverId}/${row.id}`,
         row
       );
 
@@ -142,7 +142,7 @@ function Shops() {
 
     try {
       await Axios.delete(
-        `http://101.53.133.52:8070/api/v1/servers/deleteshop/${uniqueId}/${row.id}`
+        `${process.env.REACT_APP_API_BASE_URL}/servers/deleteshop/${uniqueId}/${row.id}`
       );
       const updatedTableData = [...tableData];
       updatedTableData.splice(row.index, 1);
@@ -585,7 +585,7 @@ export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
 
   const handleEditSubmit = async () => {
     const res = await Axios.patch(
-      `http://101.53.133.52:8070/api/v1/servers/shop/${uniqueId}/${values.id}`,
+      `${process.env.REACT_APP_API_BASE_URL}/servers/shop/${uniqueId}/${values.id}`,
       editedValues
     );
     onSubmit(res);

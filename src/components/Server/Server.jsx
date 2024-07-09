@@ -20,6 +20,8 @@ import {
   Input,
   InputLabel,
   InputAdornment,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { FaPencilAlt, FaPlus, FaTrash } from "react-icons/fa";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
@@ -41,6 +43,12 @@ const Server = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -48,7 +56,7 @@ const Server = () => {
   const fetchData = async () => {
     try {
       const response = await Axios.get(
-        "http://101.53.133.52:8070/api/v1/servers/"
+        `${process.env.REACT_APP_API_BASE_URL}/servers/`
       );
       setTableData(response.data.data);
       setLoading(false);
@@ -69,10 +77,9 @@ const Server = () => {
 
   const handleCreateNewRow = async (values) => {
     try {
-
       let status = Boolean(values.status)
       const response = await Axios.post(
-        "http://101.53.133.52:8070/api/v1/servers/",
+        `${process.env.REACT_APP_API_BASE_URL}/servers/`,
         values
       );
       console.log("Server created:", response.data);
@@ -87,7 +94,7 @@ const Server = () => {
     try {
       setSelectedRow(row);
       const response = await Axios.get(
-        `http://101.53.133.52:8070/api/v1/servers/${row.uniqueId}`
+        `${process.env.REACT_APP_API_BASE_URL}/servers/${row.uniqueId}`
       );
       if (response && response.data && response.data.data) {
         const updatedData = response.data.data;
@@ -107,15 +114,34 @@ const Server = () => {
   };
 
   const handleLogin = (values) => {
-    const apiUrl = `http://101.53.133.52:8070/api/v1/servers/diva/login?uniqueId=${selectedRow.uniqueId}`;
+    const apiUrl = `${process.env.REACT_APP_API_BASE_URL}/servers/diva/login?uniqueId=${selectedRow.uniqueId}`;
     Axios.post(apiUrl, values)
       .then((response) => {
-        console.log("Login successful:", response.data.data);
+        console.log("Login successful:", response);
         localStorage.setItem('serverDetails', JSON.stringify(response.data.data));
-        navigate(`/server/company/${selectedRow.uniqueId}`);
+        if (response.data.data.status) {
+          setSnackbar({
+            open: true,
+            message: "Connection successful!",
+            severity: "success",
+          });
+          setLoginDetailsDialogOpen(false);
+          navigate(`/server/company/${selectedRow.uniqueId}`);
+        } else {
+          setSnackbar({
+            open: true,
+            message: response.data.message,
+            severity: "error",
+          });
+        }
       })
       .catch((error) => {
         console.error("Login failed:", error);
+        setSnackbar({
+          open: true,
+          message: 'Connection failed',
+          severity: "error",
+        });
       });
   };
 
@@ -126,12 +152,19 @@ const Server = () => {
 
     try {
       await Axios.delete(
-        `http://101.53.133.52:8070/api/v1/servers/${row.uniqueId}`
+        `${process.env.REACT_APP_API_BASE_URL}/servers/${row.uniqueId}`
       );
       fetchData(); // Refresh the table data
     } catch (error) {
       console.error("Error deleting row:", error);
     }
+  };
+
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbar({ ...snackbar, open: false });
   };
 
   const columns = [
@@ -249,11 +282,22 @@ const Server = () => {
             onSubmit={handleLogin}
             selectedRow={selectedRow}
           />
+          <Snackbar
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            open={snackbar.open}
+            autoHideDuration={6000}
+            onClose={handleCloseSnackbar}
+          >
+            <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+              {snackbar.message}
+            </Alert>
+          </Snackbar>
         </Box>
       </Box>
     </>
   );
 };
+
 
 export const CreateNewServerModal = ({ open, onClose, onSubmit }) => {
   const [values, setValues] = useState({
@@ -354,7 +398,7 @@ export const EditServerModal = ({ open, onClose, onSubmit, values }) => {
   const handleEditSubmit = async () => {
     // Implement your validation logic here if needed
     const res = await Axios.put(
-      `http://101.53.133.52:8070/api/v1/servers/${values.uniqueId}`,
+      `${process.env.REACT_APP_API_BASE_URL}/servers/${values.uniqueId}`,
       editedValues
     );
     onSubmit(res.data.data);
@@ -440,7 +484,6 @@ export const LoginDetailsDialog = ({
 
   const handleLogin = () => {
     onSubmit(values);
-    onClose();
   };
 
   return (
@@ -492,7 +535,9 @@ export const LoginDetailsDialog = ({
           Login
         </Button>
       </DialogActions>
+      
     </Dialog>
+
   );
 };
 

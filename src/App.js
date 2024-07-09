@@ -17,6 +17,7 @@ const App = () => {
   const { isLoggedIn, user, onLogout } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  console.log(isLoggedIn,"Asaeds");
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -24,14 +25,14 @@ const App = () => {
       setTimeout(() => {
         setIsLoading(false);
         const serverDetails = localStorage.getItem("serverDetails");
-        console.log(serverDetails,window.location.pathname,"jkhaerekjtenrnrsjer");
-        if (serverDetails && window.location.pathname === '/server') {
-          navigate("/companies");
+        if (!serverDetails) {
+          navigate("/server");
         }
+        
 
       }, 1000);
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn,navigate]);
 
   useEffect(() => {
     if (!isLoggedIn) {

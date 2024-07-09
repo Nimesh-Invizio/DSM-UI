@@ -27,7 +27,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("user");
   };
 
-  console.log(isLoggedIn,"False-horah hai context");
   return (
     <AuthContext.Provider value={{ isLoggedIn, user, onLogin, onLogout }}>
       {children}
