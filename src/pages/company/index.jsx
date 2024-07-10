@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import { FaPencilAlt, FaTrash } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
-
+import apiContract from "../shop/services/shop.service";
 const Company = () => {
   const [tableData, setTableData] = useState([]);
   const navigate = useNavigate();
@@ -47,6 +47,29 @@ const Company = () => {
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState(null);
+  const [companyShopsMap, setCompanyShopsMap] = useState({});
+
+  const fetchShopsAndCreateMap = async () => {
+    try {
+      const response = await apiContract.getAllShops(serverId);
+      if (response.status === 200 && response.data) {
+        const shopMap = {};
+        response.data.forEach(shop => {
+          if (shop.company && shop.company.id) {
+            if (!shopMap[shop.company.id]) {
+              shopMap[shop.company.id] = [];
+            }
+            shopMap[shop.company.id].push(shop);
+          }
+        });
+        setCompanyShopsMap(shopMap);
+      }
+    } catch (error) {
+      console.error("Error fetching shops:", error);
+    }
+  };
+
+
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -66,13 +89,14 @@ const Company = () => {
           `${process.env.REACT_APP_API_BASE_URL}/servers/companies/${serverId}`
         );
         setTableData(response.data.data || []);
+        await fetchShopsAndCreateMap();
+
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     };
 
     if (serverId) {
-      console.log(serverId);
       fetchData();
     }
   }, [serverId]);
@@ -96,7 +120,6 @@ const Company = () => {
         values
       );
       setTableData([...tableData, response.data]);
-      console.log(response.data);
       setCreateModalOpen(false);
     } catch (error) {
       console.error("Error creating a new row:", error);
@@ -111,10 +134,8 @@ const Company = () => {
         row
       );
 
-      console.log("RES", response);
       if (response && response.data && response.data.data) {
         const updatedData = response.data.data;
-        console.log("updatedData", updatedData[0]);
         setEditModalValues(updatedData[0]);
         setEditModalOpen(true);
       } else {
@@ -172,7 +193,6 @@ const Company = () => {
     ],
     []
   );
-
   return (
     <>
       <Navbar />
@@ -226,37 +246,43 @@ const Company = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-  {tableData && tableData.length > 0 ? (
-    tableData
-      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-      .map((row, rowIndex) => (
-        <TableRow key={row.id}>
-          {columns.map((column) => (
-            <TableCell
-              key={column.accessorKey}
-              style={{ textAlign: "center" }}
-            >
-              {row[column.accessorKey]}
-            </TableCell>
-          ))}
-          <TableCell style={{ textAlign: "center" }}>
-            <IconButton onClick={() => handleEditRow(row)}>
-              <FaPencilAlt></FaPencilAlt>
-            </IconButton>
-            <IconButton onClick={() => handleDeleteRow(row)}>
-              <FaTrash></FaTrash>
-            </IconButton>
-          </TableCell>
-        </TableRow>
-      ))
-  ) : (
-    <TableRow>
-      <TableCell colSpan={columns.length + 1} style={{ textAlign: "center" }}>
-        No data available
-      </TableCell>
-    </TableRow>
-  )}
-</TableBody>
+                  {tableData && tableData.length > 0 ? (
+                    tableData
+                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .map((row, rowIndex) => (
+                        <TableRow key={row.id}>
+                          {columns.map((column) => (
+                            <TableCell
+                              key={column.accessorKey}
+                              style={{ textAlign: "center" }}
+                            >
+                              {row[column.accessorKey]}
+                            </TableCell>
+                          ))}
+                          <TableCell style={{ textAlign: "center" }}>
+                            <IconButton onClick={() => handleEditRow(row)}>
+                              <FaPencilAlt />
+                            </IconButton>
+                            <IconButton
+                              onClick={() => handleDeleteRow(row)}
+                              disabled={companyShopsMap[row.id] && companyShopsMap[row.id].length > 0}
+                              title={companyShopsMap[row.id] && companyShopsMap[row.id].length > 0 ?
+                                "Cannot delete company with shops" : "Delete company"}
+                            >
+                              <FaTrash color={companyShopsMap[row.id] && companyShopsMap[row.id].length > 0 ?
+                                "#ccc" : "inherit"} />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={columns.length + 1} style={{ textAlign: "center" }}>
+                        No data available
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
 
               </Table>
 

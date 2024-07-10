@@ -138,7 +138,6 @@ function Devices() {
 
       if (response && response.data && response.data.data) {
         const updatedData = response.data.data.data;
-        console.log("updatedData", updatedData);
         setEditModalValues(updatedData);
         setEditModalOpen(true);
       } else {
@@ -355,15 +354,10 @@ export const CreateNewDeviceModal = ({ open, onClose, onSubmit }) => {
   
     const validationErrors = validateFields(trimmedValues);
   
-    console.log("Trimmed Values:", trimmedValues);
-    console.log("Validation Errors:", validationErrors);
-  
     if (Object.keys(validationErrors).length === 0) {
-      console.log("No validation errors, submitting form...");
       onSubmit(trimmedValues);
       onClose();
     } else {
-      console.log("Validation errors found, not submitting form.");
       setErrors(validationErrors);
     }
   };

@@ -94,7 +94,6 @@ const ProductsCard = ({ shopDetails }) => {
 
         } catch (error) {
             if (error.name === 'AbortError') {
-                console.log('Delete operation was cancelled');
                 setSnackBarStatus(true);
                 setDeleteQuotations({
                     status: 'info',

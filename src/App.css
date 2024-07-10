@@ -40,3 +40,12 @@
 .css-nz47g-MuiPaper-root-MuiAppBar-root {
   background-color: green;
 }
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - 64px);
+  width: 100%;
+  margin-top: 34px;
+}

@@ -17,7 +17,6 @@ const App = () => {
   const { isLoggedIn, user, onLogout } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  console.log(isLoggedIn,"Asaeds");
 
   useEffect(() => {
     if (isLoggedIn) {

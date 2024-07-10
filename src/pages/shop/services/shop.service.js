@@ -48,7 +48,16 @@ const apiContract = {
     } catch (error) {
       throw new Error(error.response ? error.response.data : error.message);
     }
-  }
+  },
+  deleteShop: async (serverId, shopId) => {
+    try {
+      const response = await api.delete(`servers/${serverId}/shops/${shopId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response ? error.response.data : error.message);
+    }
+  },
+
 };
 
 export default apiContract;

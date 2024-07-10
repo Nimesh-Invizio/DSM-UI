@@ -82,7 +82,6 @@ const Server = () => {
         `${process.env.REACT_APP_API_BASE_URL}/servers/`,
         values
       );
-      console.log("Server created:", response.data);
       fetchData(); 
       setCreateModalOpen(false);
     } catch (error) {
@@ -117,7 +116,6 @@ const Server = () => {
     const apiUrl = `${process.env.REACT_APP_API_BASE_URL}/servers/diva/login?uniqueId=${selectedRow.uniqueId}`;
     Axios.post(apiUrl, values)
       .then((response) => {
-        console.log("Login successful:", response);
         localStorage.setItem('serverDetails', JSON.stringify(response.data.data));
         if (response.data.data.status) {
           setSnackbar({

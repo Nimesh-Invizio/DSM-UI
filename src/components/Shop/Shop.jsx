@@ -22,6 +22,7 @@ import {
   Input,
   InputLabel,
   TextField,
+  Tooltip,
 } from "@mui/material";
 import { FaPencilAlt, FaPlus, FaTrash, FaMobile } from "react-icons/fa";
 import { MdFolderSpecial } from "react-icons/md";
@@ -31,7 +32,6 @@ import { ServerContext } from '../../context/ServerContext';
 import DevicesModal from "../../common/DevicesModal";
 import ShopsModal from "../../common/ShopsModal";
 import apiContract from "../../pages/shop/services/shop.service";
-
 
 function Shops() {
   const [tableData, setTableData] = useState([]);
@@ -43,9 +43,8 @@ function Shops() {
   const [devicesModalOpen, setDevicesModalOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState(null);
   const serverId = JSON.parse(localStorage.getItem('serverDetails')).uniqueId;
-
-
   const [showShopModal, setShowShopModal] = useState(false);
+  const [companyShopsMap, setCompanyShopsMap] = useState({});
 
   const handleOpenShopModal = (shop) => {
     setShowShopModal(true);
@@ -70,17 +69,6 @@ function Shops() {
   };
 
   useEffect(() => {
-    // const fetchData = async () => {
-    //   try {
-    //     const response = await Axios.get(
-    //       `http://101.53.133.52:8070/api/v1/servers/shop/${uniqueId}/${id}`
-    //     );
-    //     setTableData(response.data.data.data);
-    //   } catch (error) {
-    //     console.error("Error fetching data:", error);
-    //   }
-    // };
-
     getAllShop();
   }, []);
 
@@ -91,8 +79,19 @@ function Shops() {
   const getAllShop = async () => {
     try {
       const response = await apiContract.getAllShops(serverId);
-      console.log(response,"kskukwld")
       setTableData(response.data);
+      
+      // Create company-shops map
+      const shopMap = {};
+      response.data.forEach(shop => {
+        if (shop.companyId) {
+          if (!shopMap[shop.companyId]) {
+            shopMap[shop.companyId] = [];
+          }
+          shopMap[shop.companyId].push(shop);
+        }
+      });
+      setCompanyShopsMap(shopMap);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -106,6 +105,7 @@ function Shops() {
       );
       setTableData([...tableData, response.data]);
       setCreateModalOpen(false);
+      getAllShop(); // Refresh the data
     } catch (error) {
       console.error("Error creating a new row:", error);
     }
@@ -136,6 +136,11 @@ function Shops() {
   };
 
   const handleDeleteRow = async (row) => {
+    if (companyShopsMap[row.companyId] && companyShopsMap[row.companyId].length > 0) {
+      alert("Cannot delete a shop associated with a company");
+      return;
+    }
+
     if (!window.confirm(`Are you sure you want to delete ID: ${row.id}`)) {
       return;
     }
@@ -144,9 +149,7 @@ function Shops() {
       await Axios.delete(
         `${process.env.REACT_APP_API_BASE_URL}/servers/deleteshop/${uniqueId}/${row.id}`
       );
-      const updatedTableData = [...tableData];
-      updatedTableData.splice(row.index, 1);
-      setTableData(updatedTableData);
+      getAllShop(); // Refresh the data
     } catch (error) {
       console.error("Error deleting row:", error);
     }
@@ -166,8 +169,6 @@ function Shops() {
     ],
     []
   );
-
-
 
   return (
     <>
@@ -195,7 +196,6 @@ function Shops() {
               onClose={() => setDevicesModalOpen(false)}
               shop={selectedShop}
             />
-          
           </Box>
 
           <Box sx={{ p: 3 }}>
@@ -245,7 +245,7 @@ function Shops() {
                                 <FaMobile />
                               </IconButton>
                             ) : column.accessorKey === "features" ? (
-                              <IconButton  onClick={() => handleOpenShopModal(row)}>
+                              <IconButton onClick={() => handleOpenShopModal(row)}>
                                 <MdFolderSpecial />
                               </IconButton>
                             ) : (
@@ -254,9 +254,16 @@ function Shops() {
                           </TableCell>
                         ))}
                         <TableCell style={{ textAlign: "center" }}>
-                          <IconButton onClick={() => handleDeleteRow(row)}>
-                            <FaTrash />
-                          </IconButton>
+                          <Tooltip title={companyShopsMap[row.companyId] && companyShopsMap[row.companyId].length > 0 ? "Cannot delete shop associated with a company" : "Delete shop"}>
+                            <span>
+                              <IconButton 
+                                onClick={() => handleDeleteRow(row)}
+                                disabled={companyShopsMap[row.companyId] && companyShopsMap[row.companyId].length > 0}
+                              >
+                                <FaTrash />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
                           <IconButton onClick={() => handleEditRow(row)}>
                             <FaPencilAlt />
                           </IconButton>
@@ -308,6 +315,8 @@ function Shops() {
     </>
   );
 }
+
+
 
 export const CreateNewShopModal = ({ open, onClose, onSubmit }) => {
   const { id } = useParams();

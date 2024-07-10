@@ -84,10 +84,10 @@ export default function Navbar({}) {
       open={isMenuOpen}
       onClose={handleMenuClose}
     >
-      <MenuItem onClick={handleMenuClose}>
+      {/* <MenuItem onClick={handleMenuClose}>
         <FaUser style={{ marginRight: "10px", fontSize: "1rem" }} />
         Profile
-      </MenuItem>
+      </MenuItem> */}
       <MenuItem onClick={handleLogout}>
         <FaSignOutAlt style={{ marginRight: "10px", fontSize: "1rem" }} />
         Logout
@@ -112,7 +112,7 @@ export default function Navbar({}) {
       open={isMobileMenuOpen}
       onClose={handleMobileMenuClose}
     >
-      <MenuItem>
+      {/* <MenuItem>
         <IconButton
           size="large"
           aria-label="show 17 new notifications"
@@ -123,7 +123,7 @@ export default function Navbar({}) {
           </Badge>
         </IconButton>
         <p>Notifications</p>
-      </MenuItem>
+      </MenuItem> */}
       <MenuItem onClick={handleProfileMenuOpen}>
         <IconButton
           size="large"
@@ -214,7 +214,7 @@ export default function Navbar({}) {
             </Box>
           )}
           <Box sx={{ display: { xs: "none", md: "flex" } }}>
-            <IconButton
+            {/* <IconButton
               size="large"
               aria-label="show 17 new notifications"
               color="inherit"
@@ -222,7 +222,7 @@ export default function Navbar({}) {
               <Badge badgeContent={1} color="error">
                 <NotificationsIcon />
               </Badge>
-            </IconButton>
+            </IconButton> */}
             <IconButton
               size="large"
               edge="end"

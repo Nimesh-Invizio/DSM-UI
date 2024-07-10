@@ -6,7 +6,6 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogContentText,
   DialogTitle,
   IconButton,
   Table,
@@ -18,9 +17,18 @@ import {
   Paper,
   TextField,
   Typography,
+  Switch,
+  FormControlLabel,
+  Snackbar,
+  TablePagination,
 } from '@mui/material';
 import { Edit, Delete, Add, Warning } from '@mui/icons-material';
+import MuiAlert from '@mui/material/Alert';
 import Sidenav from "../../common/SideNav";
+
+const Alert = React.forwardRef(function Alert(props, ref) {
+  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
 
 const User = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -29,6 +37,9 @@ const User = () => {
   const [editModalValues, setEditModalValues] = useState({});
   const [deleteModalValues, setDeleteModalValues] = useState({});
   const [tableData, setTableData] = useState([]);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     fetchData();
@@ -40,6 +51,7 @@ const User = () => {
       setTableData(response.data.data);
     } catch (error) {
       console.error('Error fetching data:', error);
+      showSnackbar('Error fetching data', 'error');
     }
   };
 
@@ -48,8 +60,10 @@ const User = () => {
       await Axios.post('http://localhost:8070/api/v1/auth/register', values);
       fetchData();
       setCreateModalOpen(false);
+      showSnackbar('User created successfully', 'success');
     } catch (error) {
       console.error('Error creating a new row:', error);
+      showSnackbar('Error creating user', 'error');
     }
   };
 
@@ -63,8 +77,10 @@ const User = () => {
       await Axios.patch(`http://localhost:8070/api/v1/users/${editedValues.uniqueId}`, editedValues);
       fetchData();
       setEditModalOpen(false);
+      showSnackbar('User updated successfully', 'success');
     } catch (error) {
       console.error('Error saving row edits:', error);
+      showSnackbar('Error updating user', 'error');
     }
   };
 
@@ -78,10 +94,34 @@ const User = () => {
       await Axios.delete(`http://localhost:8070/api/v1/users/${deleteModalValues.uniqueId}`);
       fetchData();
       setDeleteModalOpen(false);
+      showSnackbar('User deleted successfully', 'success');
     } catch (error) {
       console.error('Error deleting row:', error);
+      showSnackbar('Error deleting user', 'error');
     }
   };
+
+  const showSnackbar = (message, severity) => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const sortedTableData = [...tableData].sort((a, b) => b.id - a.id);
 
   return (
     <Box sx={{ display: 'flex', backgroundColor: '#FFFFFF', minHeight: '100vh' }}>
@@ -106,28 +146,41 @@ const User = () => {
                   <TableCell sx={{ backgroundColor: '#6FC276', color: 'white', fontWeight: 'bold' }}>ID</TableCell>
                   <TableCell sx={{ backgroundColor: '#6FC276', color: 'white', fontWeight: 'bold' }}>Username</TableCell>
                   <TableCell sx={{ backgroundColor: '#6FC276', color: 'white', fontWeight: 'bold' }}>E-Mail</TableCell>
+                  <TableCell sx={{ backgroundColor: '#6FC276', color: 'white', fontWeight: 'bold' }}>Is Admin</TableCell>
                   <TableCell sx={{ backgroundColor: '#6FC276', color: 'white', fontWeight: 'bold' }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {tableData.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{row.id}</TableCell>
-                    <TableCell>{row.username}</TableCell>
-                    <TableCell>{row.email}</TableCell>
-                    <TableCell>
-                      <IconButton onClick={() => handleEditRow(row)} color="primary">
-                        <Edit />
-                      </IconButton>
-                      <IconButton onClick={() => handleDeleteRow(row)} color="error">
-                        <Delete />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {sortedTableData
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell>{row.id}</TableCell>
+                      <TableCell>{row.username}</TableCell>
+                      <TableCell>{row.email}</TableCell>
+                      <TableCell>{row.isAdmin ? 'Yes' : 'No'}</TableCell>
+                      <TableCell>
+                        <IconButton onClick={() => handleEditRow(row)} color="primary">
+                          <Edit />
+                        </IconButton>
+                        <IconButton onClick={() => handleDeleteRow(row)} color="error">
+                          <Delete />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={tableData.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
         </Paper>
       </Box>
       <CreateNewUserModal
@@ -147,12 +200,37 @@ const User = () => {
         onConfirm={confirmDeleteRow}
         user={deleteModalValues}
       />
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 'auto',
+          maxWidth: '90%'
+        }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{
+            width: '100%',
+            maxWidth: '400px'
+          }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
 
 const CreateNewUserModal = ({ open, onClose, onSubmit }) => {
-  const [values, setValues] = useState({ email: '', username: '', password: '' });
+  const [values, setValues] = useState({ email: '', username: '', password: '', isAdmin: false });
 
   const handleSubmit = () => {
     onSubmit(values);
@@ -185,6 +263,16 @@ const CreateNewUserModal = ({ open, onClose, onSubmit }) => {
           fullWidth
           margin="normal"
         />
+        <FormControlLabel
+          control={
+            <Switch
+              checked={values.isAdmin}
+              onChange={(e) => setValues({ ...values, isAdmin: e.target.checked })}
+              color="primary"
+            />
+          }
+          label="Is Admin"
+        />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
@@ -200,9 +288,8 @@ const EditUserModal = ({ open, onClose, onSubmit, values }) => {
   const [editedValues, setEditedValues] = useState({});
 
   useEffect(() => {
-    // Update editedValues when the modal opens with new values
     if (open) {
-      setEditedValues({ ...values });
+      setEditedValues({ ...values, isAdmin: values.isAdmin || false });
     }
   }, [open, values]);
 
@@ -212,8 +299,8 @@ const EditUserModal = ({ open, onClose, onSubmit, values }) => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditedValues(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setEditedValues(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   return (
@@ -236,16 +323,26 @@ const EditUserModal = ({ open, onClose, onSubmit, values }) => {
           fullWidth
           margin="normal"
         />
-       
+        <FormControlLabel
+          control={
+            <Switch
+              name="isAdmin"
+              checked={editedValues.isAdmin || false}
+              onChange={handleInputChange}
+              color="primary"
+            />
+          }
+          label="Is Admin"
+        />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button 
-          onClick={handleEditSubmit} 
-          variant="contained" 
-          sx={{ 
-            backgroundColor: '#6FC276', 
-            '&:hover': { backgroundColor: '#5DA266' } 
+        <Button
+          onClick={handleEditSubmit}
+          variant="contained"
+          sx={{
+            backgroundColor: '#6FC276',
+            '&:hover': { backgroundColor: '#5DA266' }
           }}
         >
           Save Changes
@@ -268,7 +365,7 @@ const DeleteUserModal = ({ open, onClose, onConfirm, user }) => {
         },
       }}
     >
-      <DialogTitle 
+      <DialogTitle
         sx={{
           backgroundColor: '#f8d7da',
           color: '#721c24',
@@ -284,7 +381,7 @@ const DeleteUserModal = ({ open, onClose, onConfirm, user }) => {
         <Typography variant="body1" sx={{ mb: 2 }}>
           Are you sure you want to delete the user <strong>{user.username}</strong>?
         </Typography>
-        <Box 
+        <Box
           sx={{
             backgroundColor: '#f8f9fa',
             borderRadius: '4px',
@@ -299,7 +396,7 @@ const DeleteUserModal = ({ open, onClose, onConfirm, user }) => {
         </Box>
       </DialogContent>
       <DialogActions sx={{ padding: '16px', justifyContent: 'flex-end' }}>
-        <Button 
+        <Button
           onClick={onClose}
           sx={{
             color: '#6c757d',
@@ -308,9 +405,9 @@ const DeleteUserModal = ({ open, onClose, onConfirm, user }) => {
         >
           Cancel
         </Button>
-        <Button 
+        <Button
           onClick={onConfirm}
-          variant="contained" 
+          variant="contained"
           sx={{
             backgroundColor: '#dc3545',
             '&:hover': { backgroundColor: '#c82333' },
