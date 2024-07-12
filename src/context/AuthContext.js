@@ -15,6 +15,15 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const checkUserLoggedIn = () => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+      setIsLoggedIn(true);
+    }
+  };
+
+
   const onLogin = (userData) => {
     setIsLoggedIn(true);
     setUser(userData);
@@ -28,7 +37,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, onLogin, onLogout }}>
+    <AuthContext.Provider value={{ isLoggedIn, user, onLogin, onLogout,checkUserLoggedIn }}>
       {children}
     </AuthContext.Provider>
   );

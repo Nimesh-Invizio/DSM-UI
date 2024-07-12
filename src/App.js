@@ -1,4 +1,3 @@
-// App.js
 import React, { useContext, useEffect, useState } from "react";
 import "./App.css";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
@@ -14,30 +13,39 @@ import Company from "./pages/company";
 import { AuthContext } from "./context/AuthContext";
 
 const App = () => {
-  const { isLoggedIn, user, onLogout } = useContext(AuthContext);
-  const [isLoading, setIsLoading] = useState(false);
+  const { isLoggedIn, user, onLogout, checkUserLoggedIn } = useContext(AuthContext);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isLoggedIn) {
-      setIsLoading(true);
-      setTimeout(() => {
-        setIsLoading(false);
+    const initializeApp = async () => {
+      await checkUserLoggedIn();
+      setIsLoading(false);
+    };
+
+    initializeApp();
+  }, [checkUserLoggedIn]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (isLoggedIn) {
         const serverDetails = localStorage.getItem("serverDetails");
         if (!serverDetails) {
           navigate("/server");
         }
-        
-
-      }, 1000);
+      } else {
+        navigate("/login");
+      }
     }
-  }, [isLoggedIn,navigate]);
+  }, [isLoading, isLoggedIn, navigate]);
 
-  useEffect(() => {
-    if (!isLoggedIn) {
-      navigate("/login");
-    }
-  }, [isLoggedIn, navigate]);
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <PulseLoader color="#6fc276" loading={true} size={20} />
+      </div>
+    );
+  }
 
   return (
     <div className="App">
@@ -45,19 +53,8 @@ const App = () => {
       {isLoggedIn && <Sidenav />}
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={isLoggedIn ? <Navigate to="/server" /> : <Navigate to="/login" />} />
-        <Route
-          path="/server"
-          element={
-            isLoading ? (
-              <div className="loading-container">
-                <PulseLoader color="#6fc276" loading={isLoading} size={20} />
-              </div>
-            ) : (
-              <Server user={user} />
-            )
-          }
-        />
+        <Route path="/" element={<Navigate to="/server" />} />
+        <Route path="/server" element={<Server user={user} />} />
         <Route path="/companies" element={<Company user={user} />} />
         <Route path="/server/company/:uniqueId" element={<Company user={user} />} />
         <Route path="/server/company/shop/:uniqueId/:id" element={<Shops user={user} />} />
