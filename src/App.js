@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import "./App.css";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import Login from "./components/Login/Login";
@@ -16,11 +16,15 @@ const App = () => {
   const { isLoggedIn, user, onLogout, checkUserLoggedIn } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const initRef = useRef(false);
 
   useEffect(() => {
     const initializeApp = async () => {
-      await checkUserLoggedIn();
-      setIsLoading(false);
+      if (!initRef.current) {
+        initRef.current = true;
+        await checkUserLoggedIn();
+        setIsLoading(false);
+      }
     };
 
     initializeApp();

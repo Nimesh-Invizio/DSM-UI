@@ -95,7 +95,7 @@ export default function Navbar() {
     >
       <MenuItem onClick={handleMenuClose}>
         <FaUser style={{ marginRight: "10px", fontSize: "1rem" }} />
-        {user?.name}
+        {user?.username}
       </MenuItem>
       <MenuItem onClick={handleMenuClose}>
         <Typography variant="body2" color="textSecondary">

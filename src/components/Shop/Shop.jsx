@@ -1,5 +1,3 @@
-import Sidenav from "../../common/SideNav";
-import Navbar from "../../common/Navbar";
 import React, { useCallback, useMemo, useState, useEffect, useContext } from "react";
 import Axios from "axios";
 import {
@@ -23,11 +21,23 @@ import {
   InputLabel,
   TextField,
   Tooltip,
+  Snackbar,
+  CircularProgress,
+  Select,
+  MenuItem,
+  Switch,
+  FormControlLabel,
+  Typography,
 } from "@mui/material";
+import MuiAlert from '@mui/material/Alert';
 import { FaPencilAlt, FaPlus, FaTrash, FaMobile } from "react-icons/fa";
 import { MdFolderSpecial } from "react-icons/md";
-
 import { useParams } from "react-router-dom";
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+
+import Sidenav from "../../common/SideNav";
+import Navbar from "../../common/Navbar";
 import { ServerContext } from '../../context/ServerContext';
 import DevicesModal from "../../common/DevicesModal";
 import ShopsModal from "../../common/ShopsModal";
@@ -35,29 +45,39 @@ import apiContract from "../../pages/shop/services/shop.service";
 
 function Shops() {
   const [tableData, setTableData] = useState([]);
-  const { serverState, setServerId } = useContext(ServerContext);
   const { uniqueId, id } = useParams();
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editModalValues, setEditModalValues] = useState({});
   const [devicesModalOpen, setDevicesModalOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState(null);
-  const serverId = JSON.parse(localStorage.getItem('serverDetails')).uniqueId;
   const [showShopModal, setShowShopModal] = useState(false);
   const [companyShopsMap, setCompanyShopsMap] = useState({});
-
-  const handleOpenShopModal = (shop) => {
-    setShowShopModal(true);
-    setSelectedShop(shop);
-  };
-
-  const handleCloseShopModal = () => {
-    setShowShopModal(false);
-  };
-
-  // Pagination
+  const [isLoading, setIsLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+  const [companies, setCompanies] = useState([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [shopToDelete, setShopToDelete] = useState(null);
+  const [deleteImages, setDeleteImages] = useState(false);
+  const [deleteCustomers, setDeleteCustomers] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [fetchStatus, setFetchStatus] = useState({ success: false, error: false });
+
+  const [serverId, setServerId] = useState(() => {
+    const serverDetails = JSON.parse(localStorage.getItem('serverDetails'));
+    return serverDetails ? serverDetails.uniqueId : null;
+  });
+
+  useEffect(() => {
+    if (uniqueId) {
+      setServerId(uniqueId);
+    }
+  }, [uniqueId]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -68,20 +88,12 @@ function Shops() {
     setPage(0);
   };
 
-  useEffect(() => {
-    getAllShop();
-  }, []);
-
-  useEffect(() => {
-    setServerId(uniqueId);
-  }, [uniqueId]);
-
-  const getAllShop = async () => {
+  const getAllShop = useCallback(async () => {
+    setIsLoading(true);
     try {
       const response = await apiContract.getAllShops(serverId);
       setTableData(response.data);
       
-      // Create company-shops map
       const shopMap = {};
       response.data.forEach(shop => {
         if (shop.companyId) {
@@ -92,26 +104,61 @@ function Shops() {
         }
       });
       setCompanyShopsMap(shopMap);
+      setFetchStatus({ success: true, error: false });
     } catch (error) {
       console.error("Error fetching data:", error);
+      setFetchStatus({ success: false, error: true });
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [serverId]);
 
-  const handleCreateNewRow = async (values) => {
+  useEffect(() => {
+    if (serverId) {
+      getAllShop();
+    }
+  }, [serverId, getAllShop]);
+
+  useEffect(() => {
+    if (fetchStatus.success) {
+      setSnackbar({
+        open: true,
+        message: "Shops fetched successfully",
+        severity: "success",
+      });
+    } else if (fetchStatus.error) {
+      setSnackbar({
+        open: true,
+        message: "Error fetching shops",
+        severity: "error",
+      });
+    }
+  }, [fetchStatus]);
+
+  const handleCreateNewRow = useCallback(async (values) => {
     try {
       const response = await Axios.post(
-        `${process.env.REA}/servers/shop/${serverId}`,
+        `${process.env.REACT_APP_API_BASE_URL}/servers/shop/${serverId}`,
         values
       );
-      setTableData([...tableData, response.data]);
       setCreateModalOpen(false);
-      getAllShop(); // Refresh the data
+      await getAllShop();
+      setSnackbar({
+        open: true,
+        message: "Shop created successfully",
+        severity: "success",
+      });
     } catch (error) {
       console.error("Error creating a new row:", error);
+      setSnackbar({
+        open: true,
+        message: "Error creating shop",
+        severity: "error",
+      });
     }
-  };
+  }, [serverId, getAllShop]);
 
-  const handleEditRow = async (row) => {
+  const handleEditRow = useCallback(async (row) => {
     try {
       const response = await Axios.get(
         `${process.env.REACT_APP_API_BASE_URL}/servers/singleshop/${serverId}/${row.id}`,
@@ -129,36 +176,69 @@ function Shops() {
         setEditModalOpen(true);
       } else {
         console.error("No data returned after editing");
+        setSnackbar({
+          open: true,
+          message: "Error fetching shop details",
+          severity: "error",
+        });
       }
     } catch (error) {
       console.error("Error editing row:", error);
+      setSnackbar({
+        open: true,
+        message: "Error editing shop",
+        severity: "error",
+      });
     }
-  };
+  }, [serverId]);
 
-  const handleDeleteRow = async (row) => {
+  const handleDeleteRow = useCallback((row) => {
     if (companyShopsMap[row.companyId] && companyShopsMap[row.companyId].length > 0) {
-      alert("Cannot delete a shop associated with a company");
+      setSnackbar({
+        open: true,
+        message: "Cannot delete a shop associated with a company",
+        severity: "warning",
+      });
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to delete ID: ${row.id}`)) {
-      return;
-    }
+    setShopToDelete(row);
+    setDeleteModalOpen(true);
+  }, [companyShopsMap]);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!shopToDelete) return;
 
     try {
-      await Axios.delete(
-        `${process.env.REACT_APP_API_BASE_URL}/servers/deleteshop/${uniqueId}/${row.id}`
-      );
-      getAllShop(); // Refresh the data
+      await apiContract.deleteShop(serverId, shopToDelete.id, {
+        deleteImages,
+        deleteCustomers
+      });
+      await getAllShop();
+      setSnackbar({
+        open: true,
+        message: "Shop deleted successfully",
+        severity: "success",
+      });
     } catch (error) {
-      console.error("Error deleting row:", error);
+      console.error("Error deleting shop:", error);
+      setSnackbar({
+        open: true,
+        message: "Error deleting shop",
+        severity: "error",
+      });
+    } finally {
+      setDeleteModalOpen(false);
+      setShopToDelete(null);
+      setDeleteImages(false);
+      setDeleteCustomers(false);
     }
-  };
+  }, [serverId, shopToDelete, deleteImages, deleteCustomers, getAllShop]);
 
-  const handleDevicesModal = (shop) => {
+  const handleDevicesModal = useCallback((shop) => {
     setDevicesModalOpen(true);
     setSelectedShop(shop);
-  };
+  }, []);
 
   const columns = useMemo(
     () => [
@@ -169,6 +249,28 @@ function Shops() {
     ],
     []
   );
+
+  const fetchCompanies = useCallback(async () => {
+    try {
+      const response = await Axios.get(`${process.env.REACT_APP_API_BASE_URL}/servers/companies/${serverId}`);
+      setCompanies(response.data.data);
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCompanies();
+  }, [fetchCompanies]);
+
+  const handleOpenShopModal = useCallback((shop) => {
+    setShowShopModal(true);
+    setSelectedShop(shop);
+  }, []);
+
+  const handleCloseShopModal = useCallback(() => {
+    setShowShopModal(false);
+  }, []);
 
   return (
     <>
@@ -199,13 +301,30 @@ function Shops() {
           </Box>
 
           <Box sx={{ p: 3 }}>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    {columns.map((column) => (
+            {isLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                <CircularProgress size={60} thickness={4} sx={{ color: '#6FC276' }} />
+              </Box>
+            ) : (
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      {columns.map((column) => (
+                        <TableCell
+                          key={column.accessorKey}
+                          style={{
+                            background: "#6FC276",
+                            color: "white",
+                            fontSize: "16px",
+                            fontWeight: "bold",
+                            textAlign: "center",
+                          }}
+                        >
+                          {column.header}
+                        </TableCell>
+                      ))}
                       <TableCell
-                        key={column.accessorKey}
                         style={{
                           background: "#6FC276",
                           color: "white",
@@ -214,86 +333,75 @@ function Shops() {
                           textAlign: "center",
                         }}
                       >
-                        {column.header}
+                        Actions
                       </TableCell>
-                    ))}
-                    <TableCell
-                      style={{
-                        background: "#6FC276",
-                        color: "white",
-                        fontSize: "16px",
-                        fontWeight: "bold",
-                        textAlign: "center",
-                      }}
-                    >
-                      Actions
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {tableData
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((row, rowIndex) => (
-                      <TableRow key={rowIndex}>
-                        {columns.map((column) => (
-                          <TableCell
-                            key={column.accessorKey}
-                            style={{ textAlign: "center" }}
-                          >
-                            {column.accessorKey === "devices" ? (
-                              <IconButton onClick={() => handleDevicesModal(row)}>
-                                <FaMobile />
-                              </IconButton>
-                            ) : column.accessorKey === "features" ? (
-                              <IconButton onClick={() => handleOpenShopModal(row)}>
-                                <MdFolderSpecial />
-                              </IconButton>
-                            ) : (
-                              row[column.accessorKey]
-                            )}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {tableData
+                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .map((row, rowIndex) => (
+                        <TableRow key={rowIndex}>
+                          {columns.map((column) => (
+                            <TableCell
+                              key={column.accessorKey}
+                              style={{ textAlign: "center" }}
+                            >
+                              {column.accessorKey === "devices" ? (
+                                <IconButton onClick={() => handleDevicesModal(row)}>
+                                  <FaMobile />
+                                </IconButton>
+                              ) : column.accessorKey === "features" ? (
+                                <IconButton onClick={() => handleOpenShopModal(row)}>
+                                  <MdFolderSpecial />
+                                </IconButton>
+                              ) : (
+                                row[column.accessorKey]
+                              )}
+                            </TableCell>
+                          ))}
+                          <TableCell style={{ textAlign: "center" }}>
+                            <Tooltip title={companyShopsMap[row.companyId] && companyShopsMap[row.companyId].length > 0 ? "Cannot delete shop associated with a company" : "Delete shop"}>
+                              <span>
+                                <IconButton 
+                                  onClick={() => handleDeleteRow(row)}
+                                  disabled={companyShopsMap[row.companyId] && companyShopsMap[row.companyId].length > 0}
+                                >
+                                  <FaTrash />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            <IconButton onClick={() => handleEditRow(row)}>
+                              <FaPencilAlt />
+                            </IconButton>
                           </TableCell>
-                        ))}
-                        <TableCell style={{ textAlign: "center" }}>
-                          <Tooltip title={companyShopsMap[row.companyId] && companyShopsMap[row.companyId].length > 0 ? "Cannot delete shop associated with a company" : "Delete shop"}>
-                            <span>
-                              <IconButton 
-                                onClick={() => handleDeleteRow(row)}
-                                disabled={companyShopsMap[row.companyId] && companyShopsMap[row.companyId].length > 0}
-                              >
-                                <FaTrash />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                          <IconButton onClick={() => handleEditRow(row)}>
-                            <FaPencilAlt />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
 
-              <TablePagination
-                rowsPerPageOptions={[5, 10, 25]}
-                component="div"
-                count={tableData.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                nextIconButtonText="Next"
-                backIconButtonText="Previous"
-                sx={{
-                  ".MuiTablePagination-toolbar": {
-                    backgroundColor: "#6FC276",
-                    color: "white",
-                  },
-                  ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows": {
-                    color: "white",
-                  },
-                }}
-              />
-            </TableContainer>
+                <TablePagination
+                  rowsPerPageOptions={[5, 10, 25]}
+                  component="div"
+                  count={tableData.length}
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  nextIconButtonText="Next"
+                  backIconButtonText="Previous"
+                  sx={{
+                    ".MuiTablePagination-toolbar": {
+                      backgroundColor: "#6FC276",
+                      color: "white",
+                    },
+                    ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows": {
+                      color: "white",
+                    },
+                  }}
+                />
+              </TableContainer>
+            )}
           </Box>
 
           <ShopsModal shopDetails={selectedShop} open={showShopModal} onClose={handleCloseShopModal} />
@@ -302,6 +410,7 @@ function Shops() {
             open={createModalOpen}
             onClose={() => setCreateModalOpen(false)}
             onSubmit={handleCreateNewRow}
+            companies={companies}
           />
 
           <EditShopModal
@@ -309,7 +418,35 @@ function Shops() {
             onClose={() => setEditModalOpen(false)}
             onSubmit={getAllShop}
             values={editModalValues}
+            companies={companies}
           />
+
+          <DeleteShopModal
+            open={deleteModalOpen}
+            onClose={() => setDeleteModalOpen(false)}
+            onConfirm={handleDeleteConfirm}
+            shopName={shopToDelete?.shopName}
+            deleteImages={deleteImages}
+            setDeleteImages={setDeleteImages}
+            deleteCustomers={deleteCustomers}
+            setDeleteCustomers={setDeleteCustomers}
+          />
+
+          <Snackbar
+            open={snackbar.open}
+            autoHideDuration={6000}
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          >
+            <MuiAlert 
+              elevation={6} 
+              variant="filled" 
+              severity={snackbar.severity}
+              sx={{ width: '100%' }}
+            >
+              {snackbar.message}
+            </MuiAlert>
+          </Snackbar>
         </Box>
       </Box>
     </>
@@ -317,537 +454,1116 @@ function Shops() {
 }
 
 
-
-export const CreateNewShopModal = ({ open, onClose, onSubmit }) => {
-  const { id } = useParams();
-  const [values, setValues] = useState({
-    shopName: "",
-    companyId: id,
-    licenseRegAt: "",
-    licenseKey: "",
-    licenseExpiresAt: "",
-    addressLine1: "",
-    addressLine2: "",
-    state: "",
-    city: "",
-    pinCode: "",
-    country: "",
-    taxType: "",
-    taxNumber: "",
-    isPrimary: 0,
-    email: "",
-    phone: "",
-    password: "",
-    features: "",
-    quotationAllStatus: "",
-    allowedDevices: "",
+const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
   });
 
-  const handleSubmit = () => {
-    onSubmit(values);
-    onClose();
-    window.location.reload();
-  };
+  const validationSchema = Yup.object().shape({
+    shopName: Yup.string().required('Shop name is required'),
+    companyId: Yup.string().required('Company is required'),
+    licenseRegAt: Yup.date().required('License registration date is required'),
+    licenseExpiresAt: Yup.date().required('License expiration date is required'),
+    addressLine1: Yup.string().required('Address line 1 is required'),
+    addressLine2: Yup.string().required('Address line 2 is required'),
+    state: Yup.string().required('State is required'),
+    city: Yup.string().required('City is required'),
+    pinCode: Yup.string().required('Pin code is required'),
+    country: Yup.string().required('Country is required'),
+    features: Yup.string().required('Features is required'),
+    email: Yup.string().email('Invalid email').required('Email is required'),
+    phone: Yup.string().required('Phone number is required'),
+    allowedDevices: Yup.number().min(1, 'At least 1 device must be allowed').required('Number of allowed devices is required'),
+  });
 
-  return (
-    <Dialog open={open}>
-      <DialogTitle>Create New Shop</DialogTitle>
-      <DialogContent>
-        <Grid container spacing={2}>
-          <Grid item xs={4}>
-            <InputLabel>CompanyId</InputLabel>
-            <Input
-              value={values.companyId}
-              onChange={(e) =>
-                setValues({ ...values, companyId: e.target.value })
-              }
-              fullWidth
-              disabled
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>Shop-Name</InputLabel>
-            <Input
-              value={values.shopName}
-              onChange={(e) =>
-                setValues({ ...values, shopName: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>License Create at</InputLabel>
-            <Input
-              type="date"
-              value={values.licenseRegAt}
-              onChange={(e) =>
-                setValues({ ...values, licenseRegAt: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>License-Key</InputLabel>
-            <Input
-              value={values.licenseKey}
-              onChange={(e) =>
-                setValues({ ...values, licenseKey: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>License Expires at</InputLabel>
-            <Input
-              type="date"
-              value={values.licenseExpiresAt}
-              onChange={(e) =>
-                setValues({ ...values, licenseExpiresAt: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>Address-Line-1</InputLabel>
-            <Input
-              value={values.addressLine1}
-              onChange={(e) =>
-                setValues({ ...values, addressLine1: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Address-Line-2</InputLabel>
-            <Input
-              value={values.addressLine2}
-              onChange={(e) =>
-                setValues({ ...values, addressLine2: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>State</InputLabel>
-            <Input
-              value={values.state}
-              onChange={(e) => setValues({ ...values, state: e.target.value })}
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>City</InputLabel>
-            <Input
-              value={values.city}
-              onChange={(e) => setValues({ ...values, city: e.target.value })}
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Country</InputLabel>
-            <Input
-              value={values.country}
-              onChange={(e) =>
-                setValues({ ...values, country: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Pincode</InputLabel>
-            <Input
-              value={values.pinCode}
-              onChange={(e) =>
-                setValues({ ...values, pinCode: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Primary</InputLabel>
-            <Input
-              value={values.isPrimary}
-              onChange={(e) => setValues({ ...values, isPrimary: 0 })}
-              fullWidth
-              disabled
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Tax-Type</InputLabel>
-            <Input
-              value={values.taxType}
-              onChange={(e) =>
-                setValues({ ...values, taxType: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Tax-Number</InputLabel>
-            <Input
-              value={values.taxNumber}
-              onChange={(e) =>
-                setValues({ ...values, taxNumber: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Email</InputLabel>
-            <Input
-              type="email"
-              value={values.email}
-              onChange={(e) => setValues({ ...values, email: e.target.value })}
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Password</InputLabel>
-            <Input
-              type="password"
-              value={values.password}
-              onChange={(e) =>
-                setValues({ ...values, password: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Contact</InputLabel>
-            <Input
-              value={values.phone}
-              onChange={(e) => setValues({ ...values, phone: e.target.value })}
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>QuotationAllStatus</InputLabel>
-            <Input
-              defaultValue=""
-              value={values.quotationAllStatus}
-              onChange={(e) =>
-                setValues({ ...values, quotationAllStatus: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={4}>
-            <InputLabel>Allowed-Devices</InputLabel>
-            <Input
-              type="number"
-              value={values.allowedDevices}
-              onChange={(e) =>
-                setValues({ ...values, allowedDevices: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <InputLabel>Features</InputLabel>
-            <TextField
-              value={values.features}
-              onChange={(e) =>
-                setValues({ ...values, features: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} sx={{ color: "#6FC276" }}>
-          Cancel
-        </Button>
-        <Button
-          color="primary"
-          onClick={handleSubmit}
-          variant="contained"
-          sx={{ background: "#6FC276", color: "white" }}
-        >
-          Create
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-
-export const EditShopModal = ({ open, onClose, onSubmit, values }) => {
-  const [editedValues, setEditedValues] = useState(values);
-  const { uniqueId } = useParams();
+  const formik = useFormik({
+    initialValues: {
+      shopName: "",
+      companyId: "",
+      licenseRegAt: "",
+      licenseExpiresAt: "",
+      addressLine1: "",
+      addressLine2: "",
+      state: "",
+      city: "",
+      pinCode: "",
+      country: "",
+      isPrimary: 0,
+      email: "",
+      phone: "",
+      features: "",
+      allowedDevices: "",
+    },
+    validationSchema: validationSchema,
+    onSubmit: async (values) => {
+      setIsLoading(true);
+      try {
+        await onSubmit(values);
+        setSnackbar({
+          open: true,
+          message: "Shop created successfully",
+          severity: "success",
+        });
+        onClose();
+      } catch (error) {
+        setSnackbar({
+          open: true,
+          message: "Error creating shop: " + error.message,
+          severity: "error",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+  });
 
   useEffect(() => {
-    setEditedValues(values);
-  }, [values]);
-
-  const handleEditSubmit = async () => {
-    const res = await Axios.patch(
-      `${process.env.REACT_APP_API_BASE_URL}/servers/shop/${uniqueId}/${values.id}`,
-      editedValues
-    );
-    onSubmit(res);
-    onClose();
-  };
+    if (open) {
+      formik.resetForm();
+    }
+  }, [open]);
 
   return (
-    <Dialog open={open}>
-      <DialogTitle>Edit Shop</DialogTitle>
-      <DialogContent>
-        <Grid container spacing={2}>
-          <Grid item xs={4}>
-            <InputLabel>Company-Name</InputLabel>
-            <Input
-              value={editedValues.shopName}
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  shopName: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>License Create At</InputLabel>
-            <Input
-              type="date"
-              value={editedValues.licenseRegAt}
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  licenseRegAt: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>License Expires At</InputLabel>
-            <Input
-              type="date"
-              value={editedValues.licenseExpiresAt}
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  licenseExpiresAt: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>License Key</InputLabel>
-            <Input
-              value={editedValues.licenseKey}
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  licenseKey: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <InputLabel>Address-Line-1</InputLabel>
-            <Input
-              value={
-                editedValues &&
-                  editedValues.address &&
-                  editedValues.address.addressLine1
-                  ? editedValues.address.addressLine1
-                  : ""
-              }
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  addressLine1: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
+    <>
+      <Dialog open={open} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ bgcolor: '#6FC276', color: 'white' }}>Create New Shop</DialogTitle>
+        <form onSubmit={formik.handleSubmit}>
+          <DialogContent sx={{ p: 3 }}>
+            <Grid container spacing={3}>
+              <Grid item xs={4}>
+                <InputLabel>Company</InputLabel>
+                <Select
+                  name="companyId"
+                  value={formik.values.companyId}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.companyId && Boolean(formik.errors.companyId)}
+                  fullWidth
+                >
+                  {companies.map((company) => (
+                    <MenuItem key={company.id} value={company.id}>
+                      {company.companyName}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {formik.touched.companyId && formik.errors.companyId && (
+                  <div style={{color: 'red'}}>{formik.errors.companyId}</div>
+                )}
+              </Grid>
+              
+              <Grid item xs={4}>
+                <InputLabel>Shop Name</InputLabel>
+                <TextField
+                  name="shopName"
+                  value={formik.values.shopName}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.shopName && Boolean(formik.errors.shopName)}
+                  helperText={formik.touched.shopName && formik.errors.shopName}
+                  fullWidth
+                />
+              </Grid>
 
-          <Grid item xs={4}>
-            <InputLabel>Address-Line-2</InputLabel>
-            <Input
-              value={
-                editedValues &&
-                  editedValues.address &&
-                  editedValues.address.addressLine2
-                  ? editedValues.address.addressLine2
-                  : ""
-              }
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  addressLine2: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
+              <Grid item xs={4}>
+                <InputLabel>License Registration Date</InputLabel>
+                <TextField
+                  name="licenseRegAt"
+                  type="date"
+                  value={formik.values.licenseRegAt}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.licenseRegAt && Boolean(formik.errors.licenseRegAt)}
+                  helperText={formik.touched.licenseRegAt && formik.errors.licenseRegAt}
+                  fullWidth
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+              </Grid>
 
-          <Grid item xs={4}>
-            <InputLabel>State</InputLabel>
-            <Input
-              value={
-                editedValues &&
-                  editedValues.address &&
-                  editedValues.address.state
-                  ? editedValues.address.state
-                  : ""
-              }
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, state: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
+              {/* <Grid item xs={4}>
+                <InputLabel>License Key</InputLabel>
+                <TextField
+                  name="licenseKey"
+                  value={formik.values.licenseKey}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.licenseKey && Boolean(formik.errors.licenseKey)}
+                  helperText={formik.touched.licenseKey && formik.errors.licenseKey}
+                  fullWidth
+                />
+              </Grid> */}
 
-          <Grid item xs={4}>
-            <InputLabel>City</InputLabel>
-            <Input
-              value={
-                editedValues &&
-                  editedValues.address &&
-                  editedValues.address.city
-                  ? editedValues.address.city
-                  : ""
-              }
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, city: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
+              <Grid item xs={4}>
+                <InputLabel>License Expiration Date</InputLabel>
+                <TextField
+                  name="licenseExpiresAt"
+                  type="date"
+                  value={formik.values.licenseExpiresAt}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.licenseExpiresAt && Boolean(formik.errors.licenseExpiresAt)}
+                  helperText={formik.touched.licenseExpiresAt && formik.errors.licenseExpiresAt}
+                  fullWidth
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+              </Grid>
 
-          <Grid item xs={4}>
-            <InputLabel>Country</InputLabel>
-            <Input
-              value={
-                editedValues &&
-                  editedValues.address &&
-                  editedValues.address.country
-                  ? editedValues.address.country
-                  : ""
-              }
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, country: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
+              <Grid item xs={4}>
+                <InputLabel>Address Line 1</InputLabel>
+                <TextField
+                  name="addressLine1"
+                  value={formik.values.addressLine1}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.addressLine1 && Boolean(formik.errors.addressLine1)}
+                  helperText={formik.touched.addressLine1 && formik.errors.addressLine1}
+                  fullWidth
+                />
+              </Grid>
 
-          <Grid item xs={4}>
-            <InputLabel>Pincode</InputLabel>
-            <Input
-              value={
-                editedValues &&
-                  editedValues.address &&
-                  editedValues.address.pinCode
-                  ? editedValues.address.pinCode
-                  : ""
-              }
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, pinCode: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
+              <Grid item xs={4}>
+                <InputLabel>Address Line 2</InputLabel>
+                <TextField
+                  name="addressLine2"
+                  value={formik.values.addressLine2}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  fullWidth
+                />
+              </Grid>
 
-          <Grid item xs={4}>
-            <InputLabel>Email</InputLabel>
-            <Input
-              value={editedValues.email}
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, email: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
+              <Grid item xs={4}>
+                <InputLabel>State</InputLabel>
+                <TextField
+                  name="state"
+                  value={formik.values.state}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.state && Boolean(formik.errors.state)}
+                  helperText={formik.touched.state && formik.errors.state}
+                  fullWidth
+                />
+              </Grid>
 
-          <Grid item xs={4}>
-            <InputLabel>Contact</InputLabel>
-            <Input
-              value={editedValues.phone}
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, phone: e.target.value })
-              }
-              fullWidth
-            />
-          </Grid>
+              <Grid item xs={4}>
+                <InputLabel>City</InputLabel>
+                <TextField
+                  name="city"
+                  value={formik.values.city}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.city && Boolean(formik.errors.city)}
+                  helperText={formik.touched.city && formik.errors.city}
+                  fullWidth
+                />
+              </Grid>
 
-          <Grid item xs={4}>
-            <InputLabel>QuatationAllStatus</InputLabel>
-            <Input
-              value={editedValues.quotationAllStatus}
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  quotationAllStatus: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
+              <Grid item xs={4}>
+                <InputLabel>Pin Code</InputLabel>
+                <TextField
+                  name="pinCode"
+                  value={formik.values.pinCode}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.pinCode && Boolean(formik.errors.pinCode)}
+                  helperText={formik.touched.pinCode && formik.errors.pinCode}
+                  fullWidth
+                />
+              </Grid>
 
-          <Grid item xs={4}>
-            <InputLabel>Allowed Devices</InputLabel>
-            <Input
-              type="number"
-              value={editedValues.allowedDevices}
-              onChange={(e) =>
-                setEditedValues({
-                  ...editedValues,
-                  allowedDevices: e.target.value,
-                })
-              }
-              fullWidth
-            />
-          </Grid>
+              <Grid item xs={4}>
+                <InputLabel>Country</InputLabel>
+                <TextField
+                  name="country"
+                  value={formik.values.country}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.country && Boolean(formik.errors.country)}
+                  helperText={formik.touched.country && formik.errors.country}
+                  fullWidth
+                />
+              </Grid>
 
-          <Grid item xs={12}>
-            <InputLabel>Features</InputLabel>
-            <TextField
-              value={editedValues.features}
-              onChange={(e) =>
-                setEditedValues({ ...editedValues, features: e.target.value })
-              }
-              fullWidth
+              {/* <Grid item xs={4}>
+                <InputLabel>Tax Type</InputLabel>
+                <TextField
+                  name="taxType"
+                  value={formik.values.taxType}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  fullWidth
+                />
+              </Grid> */}
+
+              {/* <Grid item xs={4}>
+                <InputLabel>Tax Number</InputLabel>
+                <TextField
+                  name="taxNumber"
+                  value={formik.values.taxNumber}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  fullWidth
+                />
+              </Grid> */}
+
+              <Grid item xs={4}>
+                <InputLabel>Is Primary</InputLabel>
+                <Select
+                  name="isPrimary"
+                  value={formik.values.isPrimary}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  fullWidth
+                >
+                  <MenuItem value={0}>No</MenuItem>
+                  <MenuItem value={1}>Yes</MenuItem>
+                </Select>
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Email</InputLabel>
+                <TextField
+                  name="email"
+                  value={formik.values.email}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.email && Boolean(formik.errors.email)}
+                  helperText={formik.touched.email && formik.errors.email}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Phone</InputLabel>
+                <TextField
+                  name="phone"
+                  value={formik.values.phone}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.phone && Boolean(formik.errors.phone)}
+                  helperText={formik.touched.phone && formik.errors.phone}
+                  fullWidth
+                />
+              </Grid>
+
+              {/* <Grid item xs={4}>
+                <InputLabel>Password</InputLabel>
+                <TextField
+                  name="password"
+                  type="password"
+                  value={formik.values.password}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.password && Boolean(formik.errors.password)}
+                  helperText={formik.touched.password && formik.errors.password}
+                  fullWidth
+                />
+              </Grid> */}
+
+              {/* <Grid item xs={4}>
+                <InputLabel>Quotation All Status</InputLabel>
+                <TextField
+                  name="quotationAllStatus"
+                  value={formik.values.quotationAllStatus}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  fullWidth
+                />
+              </Grid> */}
+
+              <Grid item xs={4}>
+                <InputLabel>Allowed Devices</InputLabel>
+                <TextField
+                  name="allowedDevices"
+                  type="number"
+                  value={formik.values.allowedDevices}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.allowedDevices && Boolean(formik.errors.allowedDevices)}
+                  helperText={formik.touched.allowedDevices && formik.errors.allowedDevices}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <InputLabel>Features</InputLabel>
+                <TextField
+                  name="features"
+                  value={formik.values.features}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  fullWidth
+                  multiline
+                  rows={4}
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, bgcolor: '#f5f5f5' }}>
+            <Button onClick={onClose} sx={{ color: "#6FC276" }}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              sx={{ background: "#6FC276", color: "white" }}
+              disabled={isLoading}
+            >
+              {isLoading ? <CircularProgress size={24} /> : "Create"}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <MuiAlert 
+          elevation={6} 
+          variant="filled" 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </MuiAlert>
+      </Snackbar>
+    </>
+  );
+};
+// const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
+//   const [isLoading, setIsLoading] = useState(false);
+//   const [snackbar, setSnackbar] = useState({
+//     open: false,
+//     message: "",
+//     severity: "success",
+//   });
+
+//   const validationSchema = useMemo(() => Yup.object().shape({
+//     shopName: Yup.string().required('Shop name is required'),
+//     companyId: Yup.string().required('Company is required'),
+//     licenseRegAt: Yup.date().required('License registration date is required'),
+//     licenseExpiresAt: Yup.date().required('License expiration date is required'),
+//     addressLine1: Yup.string().required('Address line 1 is required'),
+//     addressLine2: Yup.string(),
+//     state: Yup.string().required('State is required'),
+//     city: Yup.string().required('City is required'),
+//     pinCode: Yup.string().required('Pin code is required'),
+//     country: Yup.string().required('Country is required'),
+//     features: Yup.string().required('Features is required'),
+//     email: Yup.string().email('Invalid email').required('Email is required'),
+//     phone: Yup.string().required('Phone number is required'),
+//     allowedDevices: Yup.number().min(1, 'At least 1 device must be allowed').required('Number of allowed devices is required'),
+//   }), []);
+
+//   const formikConfig = useMemo(() => ({
+//     initialValues: {
+//       shopName: "",
+//       companyId: "",
+//       licenseRegAt: "",
+//       licenseExpiresAt: "",
+//       addressLine1: "",
+//       addressLine2: "",
+//       state: "",
+//       city: "",
+//       pinCode: "",
+//       country: "",
+//       isPrimary: 0,
+//       email: "",
+//       phone: "",
+//       features: "",
+//       allowedDevices: "",
+//     },
+//     validationSchema: validationSchema,
+//     onSubmit: async (values) => {
+//       setIsLoading(true);
+//       try {
+//         await onSubmit(values);
+//         setSnackbar({
+//           open: true,
+//           message: "Shop created successfully",
+//           severity: "success",
+//         });
+//         onClose();
+//       } catch (error) {
+//         setSnackbar({
+//           open: true,
+//           message: "Error creating shop: " + error.message,
+//           severity: "error",
+//         });
+//       } finally {
+//         setIsLoading(false);
+//       }
+//     },
+//   }), [onSubmit, onClose, validationSchema]);
+
+//   const formik = useFormik(formikConfig);
+
+//   useEffect(() => {
+//     if (open) {
+//       formik.resetForm();
+//     }
+//   }, [open, formik]);
+
+//   const handleSnackbarClose = useCallback(() => {
+//     setSnackbar((prev) => ({ ...prev, open: false }));
+//   }, []);
+
+//   return (
+//     <>
+//       <Dialog open={open} maxWidth="md" fullWidth>
+//         <DialogTitle sx={{ bgcolor: '#6FC276', color: 'white' }}>Create New Shop</DialogTitle>
+//         <form onSubmit={formik.handleSubmit}>
+//           <DialogContent sx={{ p: 3 }}>
+//             <Grid container spacing={3}>
+//               <Grid item xs={4}>
+//                 <InputLabel>Company</InputLabel>
+//                 <Select
+//                   name="companyId"
+//                   value={formik.values.companyId}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   error={formik.touched.companyId && Boolean(formik.errors.companyId)}
+//                   fullWidth
+//                 >
+//                   {companies.map((company) => (
+//                     <MenuItem key={company.id} value={company.id}>
+//                       {company.companyName}
+//                     </MenuItem>
+//                   ))}
+//                 </Select>
+//                 {formik.touched.companyId && formik.errors.companyId && (
+//                   <div style={{color: 'red'}}>{formik.errors.companyId}</div>
+//                 )}
+//               </Grid>
+              
+//               <Grid item xs={4}>
+//                 <InputLabel>Shop Name</InputLabel>
+//                 <TextField
+//                   name="shopName"
+//                   value={formik.values.shopName}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   error={formik.touched.shopName && Boolean(formik.errors.shopName)}
+//                   helperText={formik.touched.shopName && formik.errors.shopName}
+//                   fullWidth
+//                 />
+//               </Grid>
+
+//               <Grid item xs={4}>
+//                 <InputLabel>License Registration Date</InputLabel>
+//                 <TextField
+//                   name="licenseRegAt"
+//                   type="date"
+//                   value={formik.values.licenseRegAt}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   error={formik.touched.licenseRegAt && Boolean(formik.errors.licenseRegAt)}
+//                   helperText={formik.touched.licenseRegAt && formik.errors.licenseRegAt}
+//                   fullWidth
+//                   InputLabelProps={{
+//                     shrink: true,
+//                   }}
+//                 />
+//               </Grid>
+
+//               <Grid item xs={4}>
+//                 <InputLabel>License Expiration Date</InputLabel>
+//                 <TextField
+//                   name="licenseExpiresAt"
+//                   type="date"
+//                   value={formik.values.licenseExpiresAt}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   error={formik.touched.licenseExpiresAt && Boolean(formik.errors.licenseExpiresAt)}
+//                   helperText={formik.touched.licenseExpiresAt && formik.errors.licenseExpiresAt}
+//                   fullWidth
+//                   InputLabelProps={{
+//                     shrink: true,
+//                   }}
+//                 />
+//               </Grid>
+
+//               <Grid item xs={4}>
+//                 <InputLabel>Address Line 1</InputLabel>
+//                 <TextField
+//                   name="addressLine1"
+//                   value={formik.values.addressLine1}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   error={formik.touched.addressLine1 && Boolean(formik.errors.addressLine1)}
+//                   helperText={formik.touched.addressLine1 && formik.errors.addressLine1}
+//                   fullWidth
+//                 />
+//               </Grid>
+
+//               <Grid item xs={4}>
+//                 <InputLabel>Address Line 2</InputLabel>
+//                 <TextField
+//                   name="addressLine2"
+//                   value={formik.values.addressLine2}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   fullWidth
+//                 />
+//               </Grid>
+
+//               <Grid item xs={4}>
+//                 <InputLabel>State</InputLabel>
+//                 <TextField
+//                   name="state"
+//                   value={formik.values.state}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   error={formik.touched.state && Boolean(formik.errors.state)}
+//                   helperText={formik.touched.state && formik.errors.state}
+//                   fullWidth
+//                 />
+//               </Grid>
+
+//               <Grid item xs={4}>
+//                 <InputLabel>City</InputLabel>
+//                 <TextField
+//                   name="city"
+//                   value={formik.values.city}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   error={formik.touched.city && Boolean(formik.errors.city)}
+//                   helperText={formik.touched.city && formik.errors.city}
+//                   fullWidth
+//                 />
+//               </Grid>
+
+//               <Grid item xs={4}>
+//                 <InputLabel>Pin Code</InputLabel>
+//                 <TextField
+//                   name="pinCode"
+//                   value={formik.values.pinCode}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   error={formik.touched.pinCode && Boolean(formik.errors.pinCode)}
+//                   helperText={formik.touched.pinCode && formik.errors.pinCode}
+//                   fullWidth
+//                 />
+//               </Grid>
+
+//               <Grid item xs={4}>
+//                 <InputLabel>Country</InputLabel>
+//                 <TextField
+//                   name="country"
+//                   value={formik.values.country}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   error={formik.touched.country && Boolean(formik.errors.country)}
+//                   helperText={formik.touched.country && formik.errors.country}
+//                   fullWidth
+//                 />
+//               </Grid>
+
+//               <Grid item xs={4}>
+//                 <InputLabel>Is Primary</InputLabel>
+//                 <Select
+//                   name="isPrimary"
+//                   value={formik.values.isPrimary}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   fullWidth
+//                 >
+//                   <MenuItem value={0}>No</MenuItem>
+//                   <MenuItem value={1}>Yes</MenuItem>
+//                 </Select>
+//               </Grid>
+
+//               <Grid item xs={4}>
+//                 <InputLabel>Email</InputLabel>
+//                 <TextField
+//                   name="email"
+//                   value={formik.values.email}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   error={formik.touched.email && Boolean(formik.errors.email)}
+//                   helperText={formik.touched.email && formik.errors.email}
+//                   fullWidth
+//                 />
+//               </Grid>
+
+//               <Grid item xs={4}>
+//                 <InputLabel>Phone</InputLabel>
+//                 <TextField
+//                   name="phone"
+//                   value={formik.values.phone}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   error={formik.touched.phone && Boolean(formik.errors.phone)}
+//                   helperText={formik.touched.phone && formik.errors.phone}
+//                   fullWidth
+//                 />
+//               </Grid>
+
+//               <Grid item xs={4}>
+//                 <InputLabel>Allowed Devices</InputLabel>
+//                 <TextField
+//                   name="allowedDevices"
+//                   type="number"
+//                   value={formik.values.allowedDevices}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   error={formik.touched.allowedDevices && Boolean(formik.errors.allowedDevices)}
+//                   helperText={formik.touched.allowedDevices && formik.errors.allowedDevices}
+//                   fullWidth
+//                 />
+//               </Grid>
+
+//               <Grid item xs={12}>
+//                 <InputLabel>Features</InputLabel>
+//                 <TextField
+//                   name="features"
+//                   value={formik.values.features}
+//                   onChange={formik.handleChange}
+//                   onBlur={formik.handleBlur}
+//                   fullWidth
+//                   multiline
+//                   rows={4}
+//                 />
+//               </Grid>
+//             </Grid>
+//           </DialogContent>
+//           <DialogActions sx={{ p: 2, bgcolor: '#f5f5f5' }}>
+//             <Button onClick={onClose} sx={{ color: "#6FC276" }}>
+//               Cancel
+//             </Button>
+//             <Button
+//               type="submit"
+//               variant="contained"
+//               sx={{ background: "#6FC276", color: "white" }}
+//               disabled={isLoading}
+//             >
+//               {isLoading ? <CircularProgress size={24} /> : "Create"}
+//             </Button>
+//           </DialogActions>
+//         </form>
+//       </Dialog>
+
+//       <Snackbar
+//         open={snackbar.open}
+//         autoHideDuration={6000}
+//         onClose={handleSnackbarClose}
+//         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+//       >
+//         <MuiAlert 
+//           elevation={6} 
+//           variant="filled" 
+//           severity={snackbar.severity}
+//           sx={{ width: '100%' }}
+//         >
+//           {snackbar.message}
+//         </MuiAlert>
+//       </Snackbar>
+//     </>
+//   );
+// };
+const EditShopModal = ({ open, onClose, onSubmit, values, companies }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  const validationSchema = Yup.object().shape({
+    shopName: Yup.string().required('Shop name is required'),
+    companyId: Yup.string().required('Company is required'),
+    licenseRegAt: Yup.date().required('License registration date is required'),
+    licenseKey: Yup.string().required('License key is required'),
+    licenseExpiresAt: Yup.date().required('License expiration date is required'),
+    addressLine1: Yup.string().required('Address line 1 is required'),
+    state: Yup.string().required('State is required'),
+    city: Yup.string().required('City is required'),
+    pinCode: Yup.string().required('Pin code is required'),
+    country: Yup.string().required('Country is required'),
+    email: Yup.string().email('Invalid email').required('Email is required'),
+    phone: Yup.string().required('Phone number is required'),
+    allowedDevices: Yup.number().min(1, 'At least 1 device must be allowed').required('Number of allowed devices is required'),
+  });
+
+  const formik = useFormik({
+    initialValues: values,
+    validationSchema: validationSchema,
+    enableReinitialize: true,
+    onSubmit: async (values) => {
+      setIsLoading(true);
+      try {
+        await onSubmit(values);
+        setSnackbar({
+          open: true,
+          message: "Shop updated successfully",
+          severity: "success",
+        });
+        onClose();
+      } catch (error) {
+        setSnackbar({
+          open: true,
+          message: "Error updating shop: " + error.message,
+          severity: "error",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+  });
+
+  return (
+    <>
+      <Dialog open={open} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ bgcolor: '#6FC276', color: 'white' }}>Edit Shop</DialogTitle>
+        <form onSubmit={formik.handleSubmit}>
+          <DialogContent sx={{ p: 3 }}>
+            <Grid container spacing={3}>
+              <Grid item xs={4}>
+                <InputLabel>Company</InputLabel>
+                <Select
+                  name="companyId"
+                  value={formik.values.companyId}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.companyId && Boolean(formik.errors.companyId)}
+                  fullWidth
+                >
+                  {companies.map((company) => (
+                    <MenuItem key={company.id} value={company.id}>
+                      {company.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {formik.touched.companyId && formik.errors.companyId && (
+                  <div style={{color: 'red'}}>{formik.errors.companyId}</div>
+                )}
+              </Grid>
+              
+              <Grid item xs={4}>
+                <InputLabel>Shop Name</InputLabel>
+                <TextField
+                  name="shopName"
+                  value={formik.values.shopName}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.shopName && Boolean(formik.errors.shopName)}
+                  helperText={formik.touched.shopName && formik.errors.shopName}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>License Registration Date</InputLabel>
+                <TextField
+                  name="licenseRegAt"
+                  type="date"
+                  value={formik.values.licenseRegAt}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.licenseRegAt && Boolean(formik.errors.licenseRegAt)}
+                  helperText={formik.touched.licenseRegAt && formik.errors.licenseRegAt}
+                  fullWidth
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>License Key</InputLabel>
+                <TextField
+                  name="licenseKey"
+                  value={formik.values.licenseKey}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.licenseKey && Boolean(formik.errors.licenseKey)}
+                  helperText={formik.touched.licenseKey && formik.errors.licenseKey}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>License Expiration Date</InputLabel>
+                <TextField
+                  name="licenseExpiresAt"
+                  type="date"
+                  value={formik.values.licenseExpiresAt}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.licenseExpiresAt && Boolean(formik.errors.licenseExpiresAt)}
+                  helperText={formik.touched.licenseExpiresAt && formik.errors.licenseExpiresAt}
+                  fullWidth
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Address Line 1</InputLabel>
+                <TextField
+                  name="addressLine1"
+                  value={formik.values.addressLine1}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.addressLine1 && Boolean(formik.errors.addressLine1)}
+                  helperText={formik.touched.addressLine1 && formik.errors.addressLine1}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Address Line 2</InputLabel>
+                <TextField
+                  name="addressLine2"
+                  value={formik.values.addressLine2}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>State</InputLabel>
+                <TextField
+                  name="state"
+                  value={formik.values.state}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.state && Boolean(formik.errors.state)}
+                  helperText={formik.touched.state && formik.errors.state}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>City</InputLabel>
+                <TextField
+                  name="city"
+                  value={formik.values.city}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.city && Boolean(formik.errors.city)}
+                  helperText={formik.touched.city && formik.errors.city}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Pin Code</InputLabel>
+                <TextField
+                  name="pinCode"
+                  value={formik.values.pinCode}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.pinCode && Boolean(formik.errors.pinCode)}
+                  helperText={formik.touched.pinCode && formik.errors.pinCode}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Country</InputLabel>
+                <TextField
+                  name="country"
+                  value={formik.values.country}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.country && Boolean(formik.errors.country)}
+                  helperText={formik.touched.country && formik.errors.country}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Tax Type</InputLabel>
+                <TextField
+                  name="taxType"
+                  value={formik.values.taxType}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Tax Number</InputLabel>
+                <TextField
+                  name="taxNumber"
+                  value={formik.values.taxNumber}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Is Primary</InputLabel>
+                <Select
+                  name="isPrimary"
+                  value={formik.values.isPrimary}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  fullWidth
+                >
+                  <MenuItem value={0}>No</MenuItem>
+                  <MenuItem value={1}>Yes</MenuItem>
+                </Select>
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Email</InputLabel>
+                <TextField
+                  name="email"
+                  value={formik.values.email}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.email && Boolean(formik.errors.email)}
+                  helperText={formik.touched.email && formik.errors.email}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Phone</InputLabel>
+                <TextField
+                  name="phone"
+                  value={formik.values.phone}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.phone && Boolean(formik.errors.phone)}
+                  helperText={formik.touched.phone && formik.errors.phone}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Quotation All Status</InputLabel>
+                <TextField
+                  name="quotationAllStatus"
+                  value={formik.values.quotationAllStatus}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Allowed Devices</InputLabel>
+                <TextField
+                  name="allowedDevices"
+                  type="number"
+                  value={formik.values.allowedDevices}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.allowedDevices && Boolean(formik.errors.allowedDevices)}
+                  helperText={formik.touched.allowedDevices && formik.errors.allowedDevices}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <InputLabel>Features</InputLabel>
+                <TextField
+                  name="features"
+                  value={formik.values.features}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  fullWidth
+                  multiline
+                  rows={4}
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, bgcolor: '#f5f5f5' }}>
+            <Button onClick={onClose} sx={{ color: "#6FC276" }}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              sx={{ background: "#6FC276", color: "white" }}
+              disabled={isLoading}
+            >
+              {isLoading ? <CircularProgress size={24} /> : "Save Changes"}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <MuiAlert 
+          elevation={6} 
+          variant="filled" 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </MuiAlert>
+      </Snackbar>
+    </>
+  );
+};
+
+
+const DeleteShopModal = ({ open, onClose, onConfirm, shopName, deleteImages, setDeleteImages, deleteCustomers, setDeleteCustomers }) => {
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ bgcolor: '#ff6b6b', color: 'white' }}>Confirm Delete</DialogTitle>
+      <DialogContent sx={{ p: 3 }}>
+        <Typography variant="body1" gutterBottom>
+          Are you sure you want to delete the shop "{shopName}"?
+        </Typography>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={deleteImages}
+              onChange={(e) => setDeleteImages(e.target.checked)}
+              color="primary"
             />
-          </Grid>
-        </Grid>
+          }
+          label="Delete associated images"
+        />
+        <FormControlLabel
+          control={
+            <Switch
+              checked={deleteCustomers}
+              onChange={(e) => setDeleteCustomers(e.target.checked)}
+              color="primary"
+            />
+          }
+          label="Delete associated customers"
+        />
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ p: 2, bgcolor: '#f5f5f5' }}>
         <Button onClick={onClose} sx={{ color: "#6FC276" }}>
           Cancel
         </Button>
         <Button
-          color="primary"
-          onClick={() => {
-            handleEditSubmit();
-            onClose();
-          }}
+          color="error"
+          onClick={onConfirm}
           variant="contained"
-          sx={{ background: "#6FC276", color: "white" }}
         >
-          Save Changes
+          Delete
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
+
 export default Shops;

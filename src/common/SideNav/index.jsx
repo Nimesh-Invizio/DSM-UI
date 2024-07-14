@@ -71,7 +71,6 @@ export default function Sidenav() {
   const serverDetails = localStorage.getItem('serverDetails');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.isAdmin;
-  console.log(user.isAdmin,"adwsfswdfsdaasddcvxzdfddsadsfaS");
 
   return (
     <Box sx={{ display: 'flex', boxShadow: "revert-layer" }}>
