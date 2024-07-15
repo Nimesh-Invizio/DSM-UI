@@ -116,15 +116,16 @@ const Server = () => {
     const apiUrl = `${process.env.REACT_APP_API_BASE_URL}/servers/diva/login?uniqueId=${selectedRow.uniqueId}`;
     Axios.post(apiUrl, values)
       .then((response) => {
-        localStorage.setItem('serverDetails', JSON.stringify(response.data.data));
         if (response.data.data.status) {
+          localStorage.setItem('serverDetails', JSON.stringify(response.data.data));
+
           setSnackbar({
             open: true,
             message: "Connection successful!",
             severity: "success",
           });
           setLoginDetailsDialogOpen(false);
-          navigate(`/server/company/${selectedRow.uniqueId}`);
+          navigate(`/companies`);
         } else {
           setSnackbar({
             open: true,

@@ -1,98 +1,67 @@
-import React, { useContext, useEffect, useState, useRef } from "react";
-import "./App.css";
-import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import Login from "./components/Login/Login";
 import Server from "./components/Server/Server";
-import User from "./components/User/User";
-import Shops from "./components/Shop/Shop";
-import Sidenav from "./common/SideNav";
-import Navbar from "./common/Navbar";
-import Devices from "./pages/device";
-import { PulseLoader } from "react-spinners";
 import Company from "./pages/company";
 import { AuthContext } from "./context/AuthContext";
+import Navbar from "./common/Navbar";
+import Sidenav from "./common/SideNav";
+import User from "./components/User/User";
+import Shops from "./components/Shop/Shop";
+import Devices from "./pages/device";
 
+// Protect routes that require authentication and server connection
 const ProtectedRoute = ({ children }) => {
-  const { isLoggedIn } = useContext(AuthContext);
-  const location = useLocation();
-
-  if (!isLoggedIn) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  return children;
+  const isAuthenticated = localStorage.getItem("user") !== null;
+  const isServerConnected = localStorage.getItem("serverDetails") !== null;
+  return isAuthenticated && isServerConnected ? children : (isAuthenticated ? <Navigate to="/server" replace /> : <Navigate to="/login" replace />);
 };
 
+// Redirect authenticated and connected users from public routes
 const PublicRoute = ({ children }) => {
-  const { isLoggedIn } = useContext(AuthContext);
-  const location = useLocation();
-
-  if (isLoggedIn && location.pathname === "/login") {
-    return <Navigate to="/companies" replace />;
-  }
-
-  return children;
+  const isAuthenticated = localStorage.getItem("user") !== null;
+  const isServerConnected = localStorage.getItem("serverDetails") !== null;
+  return isAuthenticated && isServerConnected ? <Navigate to="/companies" replace /> : children;
 };
 
 const App = () => {
-  const { isLoggedIn, user, onLogout, checkUserLoggedIn } = useContext(AuthContext);
-  const [isLoading, setIsLoading] = useState(true);
-  const [serverConnected, setServerConnected] = useState(true);
+  const { isLoggedIn, user, onLogout } = useContext(AuthContext);
+  const [isServerConnected, setIsServerConnected] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const initRef = useRef(false);
 
   useEffect(() => {
-    const initializeApp = async () => {
-      if (!initRef.current) {
-        initRef.current = true;
-        await checkUserLoggedIn();
-        setIsLoading(false);
-      }
-    };
+    // Check server connection on mount
+    const serverDetails = localStorage.getItem("serverDetails");
+    setIsServerConnected(serverDetails !== null);
+  }, []);
 
-    initializeApp();
-  }, [checkUserLoggedIn]);
-
+  // Redirect to appropriate page based on authentication and server connection
   useEffect(() => {
-    if (!isLoading && isLoggedIn) {
-      const serverDetails = localStorage.getItem("serverDetails");
-      if (!serverDetails) {
-        setServerConnected(false);
-        navigate("/server");
-      } else if (location.pathname === "/" || location.pathname === "/login") {
-        navigate("/companies");
-      }
+    if (isLoggedIn && !isServerConnected) {
+      navigate("/server");
+    } else if (isLoggedIn && isServerConnected) {
+      navigate(`/companies`);
     }
-  }, [isLoading, isLoggedIn, navigate, location]);
-
-  if (isLoading) {
-    return (
-      <div className="loading-spinner">
-        <PulseLoader color={"#123abc"} loading={isLoading} size={15} />
-      </div>
-    );
-  }
+  }, [isLoggedIn, isServerConnected]);
 
   return (
     <div className="App">
       {isLoggedIn && <Navbar onLogout={onLogout} user={user} />}
-      {isLoggedIn && serverConnected && <Sidenav />}
+      {isLoggedIn && isServerConnected && <Sidenav />}
       <Routes>
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-        <Route 
-          path="/server" 
-          element={
-            <ProtectedRoute>
-              <Server onConnect={() => setServerConnected(true)} />
-            </ProtectedRoute>
-          } 
-        />
+        <Route path="/server" element={<PublicRoute><Server onConnect={() => setIsServerConnected(true)} /></PublicRoute>} />
         <Route path="/companies" element={<ProtectedRoute><Company /></ProtectedRoute>} />
-        <Route path="/users" element={<ProtectedRoute><User /></ProtectedRoute>} />
+        <Route path="/user" element={<ProtectedRoute><User /></ProtectedRoute>} />
         <Route path="/shops" element={<ProtectedRoute><Shops /></ProtectedRoute>} />
         <Route path="/devices" element={<ProtectedRoute><Devices /></ProtectedRoute>} />
-        <Route path="*" element={<Navigate to={isLoggedIn ? "/companies" : "/login"} replace />} />
+        <Route path="*" element={
+          <Navigate to={
+            isLoggedIn
+              ? (isServerConnected ? "/companies" : "/server")
+              : "/login"
+          } replace />
+        } />
       </Routes>
     </div>
   );

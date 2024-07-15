@@ -118,7 +118,7 @@ const StaleImageCard = ({ shopData, shopDetails }) => {
 
     return (
         <Paper sx={{ borderRadius: 4, backgroundColor: "#ffffff", margin: 'auto', maxWidth: 600, padding: 6, boxShadow: 4, marginTop: 4, position: 'relative' }}>
-        {!loading && (
+        {loading && (
             <Box
                 sx={{
                     position: 'absolute',

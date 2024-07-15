@@ -66,8 +66,6 @@ const ShopModal = ({ open, onClose, shopDetails }) => {
         }
 
         switch (actionType) {
-            case 'Shop Features':
-                return <FeaturesCard shopData={shopData} shopDetails={shopDetails} />;
             case 'Quotation Delete':
                 return <QuotationCard  shopDetails={shopDetails} />;
             case 'Products Delete':
@@ -124,7 +122,6 @@ const ShopModal = ({ open, onClose, shopDetails }) => {
                             label="Action Type"
                             onChange={handleChange}
                         >
-                            <MenuItem value="Shop Features">Shop Features</MenuItem>
                             <MenuItem value="Quotation Delete">Quotation Delete</MenuItem>
                             <MenuItem value="Products Delete">Products Delete</MenuItem>
                             <MenuItem value="Quotation Product Image Sync">Quotation Product Image Sync</MenuItem>
