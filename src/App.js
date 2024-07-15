@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState, useRef } from "react";
 import "./App.css";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import Login from "./components/Login/Login";
 import Server from "./components/Server/Server";
 import User from "./components/User/User";
@@ -12,10 +12,34 @@ import { PulseLoader } from "react-spinners";
 import Company from "./pages/company";
 import { AuthContext } from "./context/AuthContext";
 
+const ProtectedRoute = ({ children }) => {
+  const { isLoggedIn } = useContext(AuthContext);
+  const location = useLocation();
+
+  if (!isLoggedIn) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+};
+
+const PublicRoute = ({ children }) => {
+  const { isLoggedIn } = useContext(AuthContext);
+  const location = useLocation();
+
+  if (isLoggedIn && location.pathname === "/login") {
+    return <Navigate to="/companies" replace />;
+  }
+
+  return children;
+};
+
 const App = () => {
   const { isLoggedIn, user, onLogout, checkUserLoggedIn } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(true);
+  const [serverConnected, setServerConnected] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
   const initRef = useRef(false);
 
   useEffect(() => {
@@ -31,40 +55,44 @@ const App = () => {
   }, [checkUserLoggedIn]);
 
   useEffect(() => {
-    if (!isLoading) {
-      if (isLoggedIn) {
-        const serverDetails = localStorage.getItem("serverDetails");
-        if (!serverDetails) {
-          navigate("/server");
-        }
-      } else {
-        navigate("/login");
+    if (!isLoading && isLoggedIn) {
+      const serverDetails = localStorage.getItem("serverDetails");
+      if (!serverDetails) {
+        setServerConnected(false);
+        navigate("/server");
+      } else if (location.pathname === "/" || location.pathname === "/login") {
+        navigate("/companies");
       }
     }
-  }, [isLoading, isLoggedIn, navigate]);
+  }, [isLoading, isLoggedIn, navigate, location]);
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <PulseLoader color="#6fc276" loading={true} size={20} />
+      <div className="loading-spinner">
+        <PulseLoader color={"#123abc"} loading={isLoading} size={15} />
       </div>
     );
   }
 
   return (
     <div className="App">
-      {isLoggedIn && <Navbar isLoggedIn={isLoggedIn} onLogout={onLogout} user={user} />}
-      {isLoggedIn && <Sidenav />}
+      {isLoggedIn && <Navbar onLogout={onLogout} user={user} />}
+      {isLoggedIn && serverConnected && <Sidenav />}
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Navigate to="/server" />} />
-        <Route path="/server" element={<Server user={user} />} />
-        <Route path="/companies" element={<Company user={user} />} />
-        <Route path="/server/company/:uniqueId" element={<Company user={user} />} />
-        <Route path="/server/company/shop/:uniqueId/:id" element={<Shops user={user} />} />
-        <Route path="/user" element={<User user={user} />} />
-        <Route path="/shops" element={<Shops user={user} />} />
-        <Route path="/devices" element={<Devices user={user} />} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route 
+          path="/server" 
+          element={
+            <ProtectedRoute>
+              <Server onConnect={() => setServerConnected(true)} />
+            </ProtectedRoute>
+          } 
+        />
+        <Route path="/companies" element={<ProtectedRoute><Company /></ProtectedRoute>} />
+        <Route path="/users" element={<ProtectedRoute><User /></ProtectedRoute>} />
+        <Route path="/shops" element={<ProtectedRoute><Shops /></ProtectedRoute>} />
+        <Route path="/devices" element={<ProtectedRoute><Devices /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to={isLoggedIn ? "/companies" : "/login"} replace />} />
       </Routes>
     </div>
   );

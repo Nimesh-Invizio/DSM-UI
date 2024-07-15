@@ -13,6 +13,7 @@ const QuotationCard = ({ shopData, shopDetails }) => {
     const [formErrors, setFormErrors] = useState({});
     const [deleteQuotations, setDeleteQuotations] = useState({});
     const [snackBarStatus, setSnackBarStatus] = useState(false);
+    const [hardDeleteActive,setHardDeleteActive] = useState(false);
     const serverId = JSON.parse(localStorage.getItem('serverDetails')).uniqueId;
 
     const handleChangeItemStatus = (event) => {
