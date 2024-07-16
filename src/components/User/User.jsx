@@ -57,7 +57,7 @@ const User = () => {
 
   const handleCreateNewRow = async (values) => {
     try {
-      await Axios.post('http://localhost:8070/api/v1/auth/register', values);
+      await Axios.post(`${process.env.REACT_APP_API_BASE_URL}/auth/register`, values);
       fetchData();
       setCreateModalOpen(false);
       showSnackbar('User created successfully', 'success');
@@ -74,7 +74,7 @@ const User = () => {
 
   const handleSaveRowEdits = async (editedValues) => {
     try {
-      await Axios.patch(`http://localhost:8070/api/v1/users/${editedValues.uniqueId}`, editedValues);
+      await Axios.patch(`${process.env.REACT_APP_API_BASE_URL}/users/${editedValues.uniqueId}`, editedValues);
       fetchData();
       setEditModalOpen(false);
       showSnackbar('User updated successfully', 'success');
@@ -91,7 +91,7 @@ const User = () => {
 
   const confirmDeleteRow = async () => {
     try {
-      await Axios.delete(`http://localhost:8070/api/v1/users/${deleteModalValues.uniqueId}`);
+      await Axios.delete(`${process.env.REACT_APP_API_BASE_URL}/users/${deleteModalValues.uniqueId}`);
       fetchData();
       setDeleteModalOpen(false);
       showSnackbar('User deleted successfully', 'success');
