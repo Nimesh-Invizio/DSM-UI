@@ -47,7 +47,7 @@ const User = () => {
 
   const fetchData = async () => {
     try {
-      const response = await Axios.get('http://localhost:8070/api/v1/users/');
+      const response = await Axios.get(`${process.env.REACT_APP_API_BASE_URL}/users/`);
       setTableData(response.data.data);
     } catch (error) {
       console.error('Error fetching data:', error);
