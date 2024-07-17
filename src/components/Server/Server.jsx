@@ -170,7 +170,7 @@ const Server = () => {
     { accessorKey: "protocols", header: "Protocol" },
     { accessorKey: "portNumber", header: "Port" },
     { accessorKey: "IPaddress", header: "IP Address" },
-    { accessorKey: "pathName", header: "Provider" },
+    { accessorKey: "pathName", header: "Name" },
   ];
 
   return (
@@ -304,7 +304,6 @@ export const CreateNewServerModal = ({ open, onClose, onSubmit }) => {
     portNumber: "",
     IPaddress: "",
     pathName: "",
-    status: "",
   });
 
   const handleSubmit = () => {
@@ -349,7 +348,7 @@ export const CreateNewServerModal = ({ open, onClose, onSubmit }) => {
             />
           </Grid>
           <Grid item xs={4}>
-            <InputLabel>Provider</InputLabel>
+            <InputLabel>Name</InputLabel>
             <Input
               value={values.pathName}
               onChange={(e) =>
@@ -358,14 +357,7 @@ export const CreateNewServerModal = ({ open, onClose, onSubmit }) => {
               fullWidth
             />
           </Grid>
-          <Grid item xs={4}>
-            <InputLabel>Status (T & F)</InputLabel>
-            <Input
-              value={values.status}
-              onChange={(e) => setValues({ ...values, status: e.target.value })}
-              fullWidth
-            />
-          </Grid>
+       
         </Grid>
       </DialogContent>
       <DialogActions>
@@ -440,7 +432,7 @@ export const EditServerModal = ({ open, onClose, onSubmit, values }) => {
             />
           </Grid>
           <Grid item xs={4}>
-            <InputLabel>Provider</InputLabel>
+            <InputLabel>Name</InputLabel>
             <Input
               value={editedValues.pathName}
               onChange={(e) =>

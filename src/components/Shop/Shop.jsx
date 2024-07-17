@@ -246,6 +246,7 @@ function Shops() {
   const columns = useMemo(
     () => [
       { accessorKey: "id", header: "ID", enableEditing: false },
+      { accessorKey: "company",subAccessorKey:'companyName', header: "Company" },
       { accessorKey: "shopName", header: "Shop Name" },
       { accessorKey: "devices", header: "Devices" },
       { accessorKey: "features", header: "Features" },
@@ -358,7 +359,9 @@ function Shops() {
                                 <IconButton onClick={() => handleOpenShopModal(row)}>
                                   <MdFolderSpecial />
                                 </IconButton>
-                              ) : (
+                              ) : column.accessorKey === "company" ? (
+                                row[column.accessorKey][column.subAccessorKey]
+                              ): (
                                 row[column.accessorKey]
                               )}
                             </TableCell>

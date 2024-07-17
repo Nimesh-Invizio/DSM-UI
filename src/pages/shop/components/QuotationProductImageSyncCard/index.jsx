@@ -16,6 +16,8 @@ const SyncButton = styled(Button)(({ theme, isSpinning }) => ({
   color: '#6FC276',
   border: '2px solid #6FC276',
   borderColor: '#6FC276',
+  width: '160px',
+  height: '40px', 
   '&:hover': {
     color: '#ffffff',
     backgroundColor: '#6FC276',
