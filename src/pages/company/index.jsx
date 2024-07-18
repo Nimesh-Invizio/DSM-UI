@@ -46,10 +46,11 @@ const Company = () => {
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const serverDetails = JSON.parse(localStorage.getItem('serverDetails'));
-  const serverId = serverDetails ? serverDetails.uniqueId : null;
+  const serverDetails = JSON.parse(localStorage.getItem('serverDetails') || '{}');
+  const serverId = serverDetails?.uniqueId;
 
-  const fetchShopsAndCreateMap = useCallback(async () => {
+  const fetchShopsAndCreateMapRef = useRef(async () => {
+    if (!serverId) return;
     try {
       const response = await apiContract.getAllShops(serverId);
       if (response.status === 200 && response.data) {
@@ -70,14 +71,15 @@ const Company = () => {
     }
   }, [serverId]);
 
-  const fetchData = useCallback(async () => {
+  const fetchDataRef = useRef(async () => {
+    if (!serverId) return;
     setLoading(true);
     try {
       const response = await Axios.get(
         `${process.env.REACT_APP_API_BASE_URL}/servers/companies/${serverId}`
       );
       setTableData(response.data.data || []);
-      await fetchShopsAndCreateMap();
+      await fetchShopsAndCreateMapRef();
       setSnackbar({ open: true, message: 'Companies fetched successfully', severity: 'success' });
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -85,13 +87,13 @@ const Company = () => {
     } finally {
       setLoading(false);
     }
-  }, [serverId, fetchShopsAndCreateMap]);
+  });
 
   useEffect(() => {
     if (serverId) {
-      fetchData();
+      fetchDataRef.current();
     }
-  }, [serverId, fetchData]);
+  }, [serverId]);
 
   const handleCreateNewRow = async (values) => {
     try {
@@ -99,10 +101,16 @@ const Company = () => {
         `${process.env.REACT_APP_API_BASE_URL}/servers/company/${serverId}`,
         values
       );
-      setTableData(prevData => [response.data, ...prevData]);
-      setCreateModalOpen(false);
-      setSnackbar({ open: true, message: 'Company created successfully', severity: 'success' });
-      fetchData();
+      if (response.data.status){
+        setTableData(prevData => [response.data, ...prevData]);
+        setCreateModalOpen(false);
+        setSnackbar({ open: true, message: 'Company created successfully', severity: 'success' });
+        fetchDataRef();
+      } 
+      else{
+        setSnackbar({ open: true, message: response.data.message, severity: 'error' });
+
+      }
     } catch (error) {
       console.error("Error creating a new row:", error);
       setSnackbar({ open: true, message: 'Error creating company', severity: 'error' });
@@ -130,8 +138,7 @@ const Company = () => {
         });
         setEditModalOpen(true);
       } else {
-        console.error("No data returned after editing");
-        setSnackbar({ open: true, message: 'Error fetching company details', severity: 'error' });
+        throw new Error("No data returned after editing");
       }
     } catch (error) {
       console.error("Error editing row:", error);
@@ -153,7 +160,7 @@ const Company = () => {
         setDeleteModalOpen(false);
         setCompanyToDelete(null);
         setSnackbar({ open: true, message: 'Company deleted successfully', severity: 'success' });
-        fetchData();
+        fetchDataRef();
       } catch (error) {
         console.error("Error deleting row:", error);
         setSnackbar({ open: true, message: 'Error deleting company', severity: 'error' });
@@ -287,13 +294,15 @@ const Company = () => {
             open={createModalOpen}
             onClose={() => setCreateModalOpen(false)}
             onSubmit={handleCreateNewRow}
+            setSnackbar={setSnackbar}
           />
 
           <EditCompanyModal
             open={editModalOpen}
             onClose={() => setEditModalOpen(false)}
-            onSubmit={fetchData}
+            onSubmit={fetchDataRef}
             values={editModalValues}
+            setSnackbar={setSnackbar}
           />
           
           <DeleteConfirmationModal
@@ -341,7 +350,7 @@ const DeleteConfirmationModal = ({ open, onClose, onConfirm }) => {
   );
 };
 
-const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
+const CreateNewCompanyModal = ({ open, onClose, onSubmit, setSnackbar }) => {
   const initialValues = {
     companyName: '',
     email: '',
@@ -378,7 +387,7 @@ const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
   const validateForm = useCallback(() => {
     let tempErrors = {};
     Object.keys(values).forEach(key => {
-      if (key !== 'isPrimary') {
+      if (key !== 'isPrimary' && key !== 'addressLine2') {
         tempErrors[key] = values[key] ? '' : `${key.charAt(0).toUpperCase() + key.slice(1)} is required`;
       }
     });
@@ -397,13 +406,15 @@ const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
         await onSubmit(values);
         setValues(initialValues);
         onClose();
+        setSnackbar({ open: true, message: 'Company created successfully', severity: 'success' });
       } catch (error) {
         console.error("Error creating company:", error);
+        setSnackbar({ open: true, message: 'Error creating company: ' + (error.response?.data?.message || error.message), severity: 'error' });
       } finally {
         setLoading(false);
       }
     }
-  }, [validateForm, values, onSubmit, onClose, initialValues]);
+  }, [validateForm, values, onSubmit, onClose, initialValues, setSnackbar]);
 
   useEffect(() => {
     if (!open) {
@@ -413,7 +424,7 @@ const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
   }, [open, initialValues]);
 
   return (
-<Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Typography variant="h4" component="div" sx={{ color: '#6FC276', fontWeight: 'bold', mb: 2 }}>
           Create New Company
@@ -489,9 +500,6 @@ const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
                 fullWidth
                 multiline
                 rows={2}
-                required
-                error={!!errors.addressLine2}
-                helperText={errors.addressLine2}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -601,7 +609,7 @@ const CreateNewCompanyModal = ({ open, onClose, onSubmit }) => {
   );
 };
 
-const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
+const EditCompanyModal = ({ open, onClose, onSubmit, values, setSnackbar }) => {
   const [editedValues, setEditedValues] = useState(values);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -646,7 +654,7 @@ const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
     if (validateForm()) {
       setLoading(true);
       try {
-        const serverDetails = JSON.parse(localStorage.getItem('serverDetails'));
+        const serverDetails = JSON.parse(localStorage.getItem('serverDetails') || '{}');
         const serverId = serverDetails?.uniqueId;
         await Axios.patch(
           `${process.env.REACT_APP_API_BASE_URL}/servers/company/${serverId}/${values.id}`,
@@ -654,13 +662,15 @@ const EditCompanyModal = ({ open, onClose, onSubmit, values }) => {
         );
         await onSubmit(editedValues);
         onClose();
+        setSnackbar({ open: true, message: 'Company updated successfully', severity: 'success' });
       } catch (error) {
         console.error("Error updating company:", error);
+        setSnackbar({ open: true, message: 'Error updating company: ' + (error.response?.data?.message || error.message), severity: 'error' });
       } finally {
         setLoading(false);
       }
     }
-  }, [validateForm, editedValues, values.id, onSubmit, onClose]);
+  }, [validateForm, editedValues, values.id, onSubmit, onClose, setSnackbar]);
 
   const formFields = useMemo(() => [
     { name: 'companyName', label: 'Company Name', type: 'text' },
@@ -750,6 +760,7 @@ CreateNewCompanyModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
+  setSnackbar: PropTypes.func.isRequired,
 };
 
 EditCompanyModal.propTypes = {
@@ -757,6 +768,7 @@ EditCompanyModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
   values: PropTypes.object.isRequired,
+  setSnackbar: PropTypes.func.isRequired,
 };
 
 export default Company;
