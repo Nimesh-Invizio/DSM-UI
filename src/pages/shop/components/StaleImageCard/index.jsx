@@ -1,10 +1,15 @@
-import { Box, Paper, Typography, FormControl, Button, Grid } from '@mui/material';
 import React, { useState, useEffect } from 'react';
+import { Box, Paper, Typography, FormControl, Button, Grid, Snackbar } from '@mui/material';
 import { DatePicker } from 'antd';
 import moment from 'moment';
-import apiContract from '../../services/shop.service';
-import SnackAlert from '../../../../common/SnackAlert';
+import MuiAlert from '@mui/material/Alert';
 import styled, { keyframes } from 'styled-components';
+import apiContract from '../../services/shop.service';
+import AnalyticsModal from '../../../../common/AnalyticsModal';
+
+const Alert = React.forwardRef(function Alert(props, ref) {
+    return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
 
 const rotate = keyframes`
   0% { transform: rotate(0deg); }
@@ -57,33 +62,71 @@ const LoadingText = styled(Typography)`
   font-weight: bold;
   color: #6FC276;
 `;
+
+
+
 const StaleImageCard = ({ shopData, shopDetails }) => {
     const [date, setDate] = useState(moment());
     const [formErrors, setFormErrors] = useState({});
     const [deleteStaleImages, setDeleteStaleImages] = useState({});
-    const [snackBarStatus, setSnackBarStatus] = useState(false);
     const [loading, setLoading] = useState(false);
-    const serverId = JSON.parse(localStorage.getItem('serverDetails')).uniqueId;
+    const [analytics, setAnalytics] = useState(null);
+    const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'info'
+    });
+    const serverId = JSON.parse(localStorage.getItem('serverDetails'))?.uniqueId;
 
-    const handleDateChange = (date, dateString) => {
+    const handleDateChange = (date) => {
         setDate(date);
     };
 
-    const handleSave = async () => {
-        setFormErrors({});
+    const showSnackbar = (message, severity = 'info') => {
+        setSnackbar({ open: true, message, severity });
+    };
 
+    const handleCloseSnackbar = (event, reason) => {
+        if (reason === 'clickaway') return;
+        setSnackbar({ ...snackbar, open: false });
+    };
+
+    const validateForm = () => {
         const errors = {};
-        if (!date.isValid()) {
-            errors.date = 'Please select a valid date';
-        }
+        if (!date.isValid()) errors.date = 'Please select a valid date';
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
 
-        if (Object.keys(errors).length > 0) {
-            setFormErrors(errors);
-            return;
-        }
+    const handleDelete = async () => {
+        if (!validateForm()) return;
 
         setLoading(true);
+        try {
+            const staleImagesDeleteQueryData = {
+                shopId: parseInt(shopDetails.id),
+                actionType: "deleteAllStaleImages",
+                date
+            }
+            const analyticsResponse = await apiContract.getAnalytics(serverId, staleImagesDeleteQueryData);
+            console.log(analyticsResponse,"analyticsResponse");
+            if (analyticsResponse.data.status) {
+                setAnalytics(analyticsResponse.data.data);
+                setConfirmModalOpen(true);
+            } else {
+                showSnackbar('Failed to fetch analytics data. Please try again.', 'error');
+            }
+        } catch (error) {
+            console.error('Error fetching analytics:', error);
+            showSnackbar('Failed to fetch analytics data. Please try again.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    const handleConfirmDelete = async () => {
+        setLoading(true);
         try {
             const shopId = shopDetails.id;
             const dataObj = {
@@ -92,24 +135,19 @@ const StaleImageCard = ({ shopData, shopDetails }) => {
             }
 
             const response = await apiContract.staleImagesDelete(serverId, shopId, dataObj);
-            setSnackBarStatus(true);
-            setDeleteStaleImages(response);
+            showSnackbar(response.message || "Stale images deleted successfully", 'success');
+            handleClear();
         } catch (error) {
-            console.error('Error deleting stale images:', error);
-            setSnackBarStatus(true);
-            setDeleteStaleImages({
-                status: 500,
-                message: error.message || 'An error occurred while deleting stale images'
-            });
+            showSnackbar(error.response?.data?.message || 'Failed to delete stale images. Please try again.', 'error');
         } finally {
             setLoading(false);
+            setConfirmModalOpen(false);
         }
-
-        handleClear();
     };
 
     const handleClear = () => {
         setDate(moment());
+        setFormErrors({});
     };
 
     useEffect(() => {
@@ -117,32 +155,33 @@ const StaleImageCard = ({ shopData, shopDetails }) => {
     }, [date]);
 
     return (
-        <Paper sx={{ borderRadius: 4, backgroundColor: "#ffffff", margin: 'auto', maxWidth: 600, padding: 6, boxShadow: 4, marginTop: 4, position: 'relative' }}>
-        {loading && (
-            <Box
-                sx={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 1500,
-                    borderRadius: 4,
-                }}
-            >
-                <StyledSVG viewBox="0 0 50 50">
-                    <StyledCircle cx="25" cy="25" r="20" />
-                </StyledSVG>
-                <LoadingText variant="h6">
-                    Deleting Stale Images...
-                </LoadingText>
-            </Box>
-        )}
+        <Paper sx={{ borderRadius: 4, backgroundColor: "#ffffff", margin: 'auto', maxWidth: 800, padding: 6, boxShadow: 4, marginTop: 4, position: 'relative' }}>
+            {loading && (
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        zIndex: 1500,
+                        borderRadius: 4,
+                    }}
+                >
+                    <StyledSVG viewBox="0 0 50 50">
+                        <StyledCircle cx="25" cy="25" r="20" />
+                    </StyledSVG>
+                    <LoadingText variant="h6">
+                        Processing...
+                    </LoadingText>
+                </Box>
+            )}
+            
             <Grid container spacing={4}>
                 <Grid item xs={12}>
                     <Typography variant="h5" align="center" gutterBottom>
@@ -164,37 +203,41 @@ const StaleImageCard = ({ shopData, shopDetails }) => {
                     </FormControl>
                 </Grid>
                 <Grid item xs={12} display="flex" justifyContent="center">
+                   
                     <Button
-                        size="large"
-                        onClick={handleSave}
-                        disabled={loading}
                         sx={{
-                            color: "#6FC276",
-                            borderColor: "#6FC276",
-                            border: 1,
-                            backgroundColor: "#ffffff",
+                            backgroundColor: "#6FC276",
+                            color: '#ffffff',
                             '&:hover': {
-                                color: "#ffffff",
-                                backgroundColor: "#6FC276",
-                                transition: '0.8s'
-                            },
-                            '&:disabled': {
-                                color: "#9e9e9e",
-                                borderColor: "#9e9e9e",
-                                backgroundColor: "#f5f5f5",
+                                backgroundColor: '#ffffff',
+                                color: "#6FC276"
                             }
                         }}
+                        onClick={handleDelete}
+                        disabled={loading}
                     >
-                        Delete
+                        {loading ? 'Processing...' : 'Delete'}
                     </Button>
                 </Grid>
             </Grid>
-            <SnackAlert
-                type={deleteStaleImages.status === 200 ? 'success' : 'error'}
-                status={snackBarStatus}
-                onClose={() => setSnackBarStatus(false)}
-                message={deleteStaleImages?.message || "Stale images deleted successfully"}
+            <AnalyticsModal
+                open={confirmModalOpen}
+                onClose={() => setConfirmModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                analytics={analytics}
+                loading={loading}
+                actionType="deleteAllStaleImages"
             />
+            <Snackbar
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+            >
+                <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Paper>
     );
 };

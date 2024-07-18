@@ -5,6 +5,7 @@ import { styled, keyframes } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import apiContract from '../../services/shop.service';
 import SnackAlert from '../../../../common/SnackAlert';
+import AnalyticsModal from '../../../../common/AnalyticsModal';
 
 const spin = keyframes`
   0% { transform: rotate(0deg); }
@@ -32,9 +33,41 @@ const QuotationProductImageSyncCard = ({ shopDetails }) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [snackBarStatus, setSnackBarStatus] = useState(false);
   const [syncResult, setSyncResult] = useState({});
+  const [analytics, setAnalytics] = useState(null);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const serverId = JSON.parse(localStorage.getItem('serverDetails')).uniqueId;
 
   const handleSync = async () => {
+    setIsSpinning(true);
+    try {
+      const shopId = shopDetails.id;
+      
+      // First, fetch analytics data
+      const analyticsResponse = await apiContract.getAnalytics(serverId, {
+        shopId,
+        actionType: "quotationProductImageMapping"
+      });
+
+      
+      if (analyticsResponse.data.status) {
+        setAnalytics(analyticsResponse.data.data);
+        setConfirmModalOpen(true);
+      } else {
+        throw new Error('Failed to fetch analytics data');
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      setSyncResult({
+        status: 500,
+        message: error.message || 'An error occurred while fetching analytics'
+      });
+      setSnackBarStatus(true);
+    } finally {
+      setIsSpinning(false);
+    }
+  };
+
+  const handleConfirmSync = async () => {
     setIsSpinning(true);
     try {
       const shopId = shopDetails.id;
@@ -50,6 +83,7 @@ const QuotationProductImageSyncCard = ({ shopDetails }) => {
       setSnackBarStatus(true);
     } finally {
       setIsSpinning(false);
+      setConfirmModalOpen(false);
     }
   };
 
@@ -66,13 +100,21 @@ const QuotationProductImageSyncCard = ({ shopDetails }) => {
         disabled={isSpinning}
         isSpinning={isSpinning}
       >
-        {isSpinning ? 'Syncing...' : 'Sync Images'}
+        {isSpinning ? 'Fetching...' : 'Sync Images'}
       </SyncButton>
       <SnackAlert
         type={syncResult.status === 200 ? 'success' : 'error'}
         status={snackBarStatus}
         onClose={() => setSnackBarStatus(false)}
         message={syncResult?.message || "Images synced successfully"}
+      />
+      <AnalyticsModal
+        open={confirmModalOpen}
+        onClose={() => setConfirmModalOpen(false)}
+        onConfirm={handleConfirmSync}
+        analytics={analytics}
+        loading={isSpinning}
+        actionType="quotationProductImageMapping"
       />
     </Box>
   );

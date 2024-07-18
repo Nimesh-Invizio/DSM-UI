@@ -1,9 +1,10 @@
-import { Box, InputLabel, MenuItem, Paper, Select, Typography, FormControl, Switch, Button, Grid } from '@mui/material';
 import React, { useState, useEffect } from 'react';
+import { Box, InputLabel, MenuItem, Paper, Select, Typography, FormControl, Switch, Button, Grid } from '@mui/material';
 import { DatePicker } from 'antd';
+import moment from 'moment';
 import apiContract from '../../services/shop.service';
 import SnackAlert from '../../../../common/SnackAlert';
-import moment from 'moment';
+import AnalyticsModal from '../../../../common/AnalyticsModal';
 
 const CoolLoadingAnimation = () => (
     <svg width="100" height="100" viewBox="0 0 100 100">
@@ -22,22 +23,21 @@ const ProductsCard = ({ shopDetails }) => {
     const [imageDelete, setImageDelete] = useState(false);
     const [date, setDate] = useState(null);
     const [formErrors, setFormErrors] = useState({});
-    const [deleteQuotations, setDeleteQuotations] = useState({});
+    const [deleteProducts, setDeleteProducts] = useState({});
     const [snackBarStatus, setSnackBarStatus] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const serverId = JSON.parse(localStorage.getItem('serverDetails')).uniqueId;
+    const [analytics, setAnalytics] = useState(null);
+    const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+    const serverId = JSON.parse(localStorage.getItem('serverDetails'))?.uniqueId;
     const [abortController, setAbortController] = useState(null);
 
     const handleChangeItemStatus = (event) => {
         const value = event.target.value.toUpperCase();
-
         if (value === "ALL") {
             setItemStatus(["", "INSTOCK", "CATALOGUE"]);
-        }
-        else if (value === "APP") {
+        } else if (value === "APP") {
             setItemStatus([""]);
-        }
-        else {
+        } else {
             setItemStatus([value]);
         }
     };
@@ -54,9 +54,7 @@ const ProductsCard = ({ shopDetails }) => {
         setDate(date);
     };
 
-    const handleSave = async (event) => {
-        setFormErrors({});
-
+    const validateForm = () => {
         const errors = {};
         if (itemStatus.length === 0) {
             errors.itemStatus = 'Please select an item status';
@@ -64,30 +62,65 @@ const ProductsCard = ({ shopDetails }) => {
         if (!date) {
             errors.date = 'Please select a date';
         }
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
 
-        if (Object.keys(errors).length > 0) {
-            setFormErrors(errors);
-            return;
+    const handleSave = async (event) => {
+        if (!validateForm()) return;
+
+        setIsLoading(true);
+        try {
+            const analyticsQueryData = {
+                shopId: parseInt(shopDetails.id),
+                actionType: "deleteProducts",
+                itemStatus,
+                imageDelete,
+                hardDelete,
+                date: date.format('YYYY-MM-DD')
+            };
+            const analyticsResponse = await apiContract.getAnalytics(serverId, analyticsQueryData);
+            if (analyticsResponse.data.status) {
+                setAnalytics(analyticsResponse.data.data);
+                setConfirmModalOpen(true);
+            } else {
+                setSnackBarStatus(true);
+                setDeleteProducts({
+                    status: 'error',
+                    message: 'Failed to fetch analytics data. Please try again.'
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching analytics:', error);
+            setSnackBarStatus(true);
+            setDeleteProducts({
+                status: 'error',
+                message: 'Failed to fetch analytics data. Please try again.'
+            });
+        } finally {
+            setIsLoading(false);
         }
+    };
 
+    const handleConfirmDelete = async () => {
         setIsLoading(true);
         const controller = new AbortController();
         setAbortController(controller);
 
         try {
             const shopId = shopDetails.id;
-            let dataObj = {
+            const dataObj = {
                 shopId: parseInt(shopId),
                 date: date.format('YYYY-MM-DD'),
                 itemStatus: itemStatus.map(element => element === "All" ? "" : element.toUpperCase()),
                 hardDelete: hardDelete ? 1 : 0,
                 imageDelete: imageDelete ? 1 : 0
-            }
+            };
 
             const response = await apiContract.deleteProducts(serverId, shopId, dataObj, controller.signal);
             
             setSnackBarStatus(true);
-            setDeleteQuotations({
+            setDeleteProducts({
                 status: response.status,
                 message: response.message || "Products deleted successfully"
             });
@@ -95,14 +128,14 @@ const ProductsCard = ({ shopDetails }) => {
         } catch (error) {
             if (error.name === 'AbortError') {
                 setSnackBarStatus(true);
-                setDeleteQuotations({
+                setDeleteProducts({
                     status: 'info',
                     message: "Delete operation was cancelled"
                 });
             } else {
                 console.error('Error deleting products:', error);
                 setSnackBarStatus(true);
-                setDeleteQuotations({
+                setDeleteProducts({
                     status: error.status || 500,
                     message: error.message || "An error occurred while deleting products"
                 });
@@ -110,6 +143,7 @@ const ProductsCard = ({ shopDetails }) => {
         } finally {
             setIsLoading(false);
             setAbortController(null);
+            setConfirmModalOpen(false);
         }
 
         handleClear();
@@ -195,7 +229,7 @@ const ProductsCard = ({ shopDetails }) => {
                 </Grid>
                 <Grid item xs={12} md={6}>
                     <FormControl fullWidth error={!!formErrors.date}>
-                    <DatePicker
+                        <DatePicker
                             size="middle"
                             className="modal-datepicker"
                             style={{ width: '100%' }}
@@ -232,16 +266,25 @@ const ProductsCard = ({ shopDetails }) => {
                             }
                         }}
                         onClick={handleSave}
+                        disabled={isLoading}
                     >
-                        Save
+                        {isLoading ? 'Processing...' : 'Delete'}
                     </Button>
                 </Grid>
             </Grid>
             <SnackAlert
-                type={deleteQuotations.status === 200 ? 'success' : 'error'}
+                type={deleteProducts.status === 200 ? 'success' : 'error'}
                 status={snackBarStatus}
                 onClose={() => setSnackBarStatus(false)}
-                message={deleteQuotations.message || "Operation completed"}
+                message={deleteProducts.message || "Operation completed"}
+            />
+            <AnalyticsModal
+                open={confirmModalOpen}
+                onClose={() => setConfirmModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                analytics={analytics}
+                loading={isLoading}
+                actionType="deleteProducts"
             />
             {isLoading && (
                 <Box
@@ -261,22 +304,24 @@ const ProductsCard = ({ shopDetails }) => {
                 >
                     <CoolLoadingAnimation />
                     <Typography variant="h6" sx={{ mt: 2, color: '#6FC276' }}>
-                        Deleting Products...
+                        {confirmModalOpen ? 'Deleting Products...' : 'Fetching Analytics...'}
                     </Typography>
-                    <Button
-                        sx={{
-                            mt: 2,
-                            backgroundColor: "#6FC276",
-                            color: '#ffffff',
-                            '&:hover': {
-                                backgroundColor: '#ffffff',
-                                color: "#6FC276"
-                            }
-                        }}
-                        onClick={handleCancel}
-                    >
-                        Cancel
-                    </Button>
+                    {!confirmModalOpen && (
+                        <Button
+                            sx={{
+                                mt: 2,
+                                backgroundColor: "#6FC276",
+                                color: '#ffffff',
+                                '&:hover': {
+                                    backgroundColor: '#ffffff',
+                                    color: "#6FC276"
+                                }
+                            }}
+                            onClick={handleCancel}
+                        >
+                            Cancel
+                        </Button>
+                    )}
                 </Box>
             )}
         </Paper>

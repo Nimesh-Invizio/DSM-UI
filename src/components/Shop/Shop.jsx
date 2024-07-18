@@ -152,8 +152,6 @@ function Shops() {
         });
       }
       else{
-        // setCreateModalOpen(true);
-        // await getAllShop();
         setSnackbar({
           open: true,
           message: response.data.data.message,
@@ -477,7 +475,7 @@ const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
     addressLine2: Yup.string().required('Address line 2 is required'),
     state: Yup.string().required('State is required'),
     city: Yup.string().required('City is required'),
-    pinCode: Yup.string().required('Pin code is required'),
+    pincode: Yup.string().required('Pin code is required'),
     country: Yup.string().required('Country is required'),
     features: Yup.string().required('Features is required'),
     email: Yup.string().email('Invalid email').required('Email is required'),
@@ -495,7 +493,7 @@ const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
       addressLine2: "",
       state: "",
       city: "",
-      pinCode: "",
+      pincode: "",
       country: "",
       isPrimary: 0,
       email: "",
@@ -535,6 +533,9 @@ const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
       formik.resetForm();
     }
   }, [open]);
+
+  console.log(formik.errors,"asdfsaad");
+
 
   return (
     <>
@@ -680,12 +681,12 @@ const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
               <Grid item xs={4}>
                 <InputLabel>Pin Code</InputLabel>
                 <TextField
-                  name="pinCode"
-                  value={formik.values.pinCode}
+                  name="pincode"
+                  value={formik.values.pincode}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  error={formik.touched.pinCode && Boolean(formik.errors.pinCode)}
-                  helperText={formik.touched.pinCode && formik.errors.pinCode}
+                  error={formik.touched.pincode && Boolean(formik.errors.pincode)}
+                  helperText={formik.touched.pincode && formik.errors.pincode}
                   fullWidth
                 />
               </Grid>
@@ -1204,7 +1205,7 @@ const EditShopModal = ({ open, onClose, onSubmit, values, serverId }) => {
       addressLine2: Yup.string().required('Address line 2 is required'),
       state: Yup.string().required('State is required'),
       city: Yup.string().required('City is required'),
-      pinCode: Yup.string().required('Pin code is required'),
+      pincode: Yup.string().required('Pin code is required'),
       country: Yup.string().required('Country is required'),
     }),
     email: Yup.string().email('Invalid email').required('Email is required'),
@@ -1228,7 +1229,7 @@ const EditShopModal = ({ open, onClose, onSubmit, values, serverId }) => {
         addressLine2: values.address?.addressLine2 || '',
         state: values.address?.state || '',
         city: values.address?.city || '',
-        pinCode: values.address?.pinCode || '',
+        pincode: values.address?.pincode || '',
         country: values.address?.country || '',
       },
       isPrimary: values.isPrimary || false,
@@ -1271,7 +1272,6 @@ const EditShopModal = ({ open, onClose, onSubmit, values, serverId }) => {
     },
   });
 
-  console.log(formik.errors,"ggggggggggg");
   const handleSnackbarClose = (event, reason) => {
     if (reason === 'clickaway') {
       return;
@@ -1399,12 +1399,12 @@ const EditShopModal = ({ open, onClose, onSubmit, values, serverId }) => {
               <Grid item xs={4}>
                 <InputLabel>Pin Code</InputLabel>
                 <TextField
-                  name="address.pinCode"
-                  value={formik.values.address?.pinCode || ''}
+                  name="address.pincode"
+                  value={formik.values.address?.pincode || ''}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  error={formik.touched.address?.pinCode && Boolean(formik.errors.address?.pinCode)}
-                  helperText={formik.touched.address?.pinCode && formik.errors.address?.pinCode}
+                  error={formik.touched.address?.pincode && Boolean(formik.errors.address?.pincode)}
+                  helperText={formik.touched.address?.pincode && formik.errors.address?.pincode}
                   fullWidth
                 />
               </Grid>

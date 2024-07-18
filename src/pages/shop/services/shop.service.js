@@ -57,6 +57,14 @@ const apiContract = {
       throw new Error(error.response ? error.response.data : error.message);
     }
   },
+  getAnalytics: async(serverId,data) => {
+    try {
+      const response = await api.post(`servers/${serverId}/shop/analytics`,data);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response ? error.response.data : error.message);
+    }
+  }
 
 };
 

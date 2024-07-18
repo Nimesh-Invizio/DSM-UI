@@ -1,29 +1,15 @@
-import { Box, Paper, Typography, FormControl, Button, Grid } from '@mui/material';
 import React, { useState, useEffect } from 'react';
+import { Box, Paper, Typography, FormControl, Button, Grid } from '@mui/material';
 import { DatePicker } from 'antd';
 import moment from 'moment';
 import apiContract from '../../services/shop.service';
 import SnackAlert from '../../../../common/SnackAlert';
+import AnalyticsModal from '../../../../common/AnalyticsModal';
 import styled, { keyframes } from 'styled-components';
 
 const spin = keyframes`
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-`;
-
-const pulse = keyframes`
-  0%, 100% { transform: scale(0.9); }
-  50% { transform: scale(1.1); }
-`;
-
-const moveLeftRight = keyframes`
-  0%, 100% { transform: translateX(-10px); }
-  50% { transform: translateX(10px); }
-`;
-
-const moveUpDown = keyframes`
-  0%, 100% { transform: translateY(-10px); }
-  50% { transform: translateY(10px); }
 `;
 
 const LoadingOverlay = styled.div`
@@ -80,37 +66,21 @@ const Circle = styled.div`
   }
 `;
 
-const Square = styled.div`
-  position: absolute;
-  width: 50px;
-  height: 50px;
-  background-color: #4A90E2;
-  animation: ${pulse} 1s ease-in-out infinite, ${moveLeftRight} 2s ease-in-out infinite;
-`;
-
-const Triangle = styled.div`
-  position: absolute;
-  width: 0;
-  height: 0;
-  border-left: 25px solid transparent;
-  border-right: 25px solid transparent;
-  border-bottom: 50px solid #F0DB4F;
-  animation: ${pulse} 1s ease-in-out infinite, ${moveUpDown} 2s ease-in-out infinite;
-`;
-
 const AllImageCard = ({ shopDetails }) => {
     const [date, setDate] = useState(moment());
     const [formErrors, setFormErrors] = useState({});
     const [deleteAllImages, setDeleteAllImages] = useState({});
     const [snackBarStatus, setSnackBarStatus] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+    const [analytics, setAnalytics] = useState(null);
     const serverId = JSON.parse(localStorage.getItem('serverDetails')).uniqueId;
 
     const handleDateChange = (date, dateString) => {
         setDate(date);
     };
 
-    const handleSave = async () => {
+    const handleDelete = async () => {
         setFormErrors({});
 
         const errors = {};
@@ -125,6 +95,39 @@ const AllImageCard = ({ shopDetails }) => {
 
         setIsLoading(true);
 
+        try {
+            const shopId = shopDetails.id;
+            const analyticsQueryData = {
+                shopId: parseInt(shopId),
+                actionType: "deleteAllImages",
+                date: date.toDate()
+            };
+
+            const analyticsResponse = await apiContract.getAnalytics(serverId, analyticsQueryData);
+            if (analyticsResponse.data.status) {
+                setAnalytics(analyticsResponse.data.data);
+                setConfirmModalOpen(true);
+            } else {
+                setSnackBarStatus(true);
+                setDeleteAllImages({
+                    status: 400,
+                    message: 'Failed to fetch analytics data. Please try again.'
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching analytics:', error);
+            setSnackBarStatus(true);
+            setDeleteAllImages({
+                status: 500,
+                message: error.message || 'An error occurred while fetching analytics'
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleConfirmDelete = async () => {
+        setIsLoading(true);
         try {
             const shopId = shopDetails.id;
             const dataObj = {
@@ -144,6 +147,7 @@ const AllImageCard = ({ shopDetails }) => {
             });
         } finally {
             setIsLoading(false);
+            setConfirmModalOpen(false);
         }
 
         handleClear();
@@ -163,10 +167,6 @@ const AllImageCard = ({ shopDetails }) => {
                 <LoadingOverlay>
                     <SuperFunkyLoader>
                         <Circle style={{ top: 5, left: 35 }}/>
-                        {/* <Square style={{ top: 0, left: 0 }} />
-                        <Square style={{ bottom: 0, right: 0 }} />
-                        <Triangle style={{ top: 0, right: 0 }} />
-                        <Triangle style={{ bottom: 0, left: 0 }} /> */}
                     </SuperFunkyLoader>
                 </LoadingOverlay>
             )}
@@ -193,7 +193,7 @@ const AllImageCard = ({ shopDetails }) => {
                 <Grid item xs={12} display="flex" justifyContent="center">
                     <Button
                         size="large"
-                        onClick={handleSave}
+                        onClick={handleDelete}
                         disabled={isLoading}
                         sx={{
                             color: "#6FC276",
@@ -212,6 +212,14 @@ const AllImageCard = ({ shopDetails }) => {
                     </Button>
                 </Grid>
             </Grid>
+            <AnalyticsModal
+                open={confirmModalOpen}
+                onClose={() => setConfirmModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                analytics={analytics}
+                loading={isLoading}
+                actionType="deleteAllImages"
+            />
             <SnackAlert
                 type={deleteAllImages.status === 200 ? 'success' : 'error'}
                 status={snackBarStatus}
