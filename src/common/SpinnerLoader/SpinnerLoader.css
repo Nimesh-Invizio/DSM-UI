@@ -1,0 +1,54 @@
+.loader-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: white;
+  }
+  
+  .loader {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .fidget-spinner {
+    animation: spin 2s linear infinite;
+  }
+  
+  @keyframes spin {
+    100% { transform: rotate(360deg); }
+  }
+  
+  .spinner-ring {
+    fill: none;
+    stroke: url(#gradient);
+    stroke-width: 8;
+  }
+  
+  .spinner-center {
+    fill: #6FC276;
+  }
+  
+  .spinner-arms {
+    fill: #6FC276;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+  }
+  
+  .loading-text {
+    font-family: 'Arial', sans-serif;
+    font-size: 18px;
+    color: #3F8E4D;
+    margin-top: 20px;
+    font-weight: 500;
+  }
+  
+  @keyframes fadeInOut {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }

@@ -33,6 +33,9 @@ import Sidenav from "../../common/SideNav";
 import Navbar from "../../common/Navbar";
 import apiContract from "../shop/services/shop.service";
 
+
+
+
 const Company = () => {
   const [tableData, setTableData] = useState([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -46,15 +49,22 @@ const Company = () => {
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const serverDetails = JSON.parse(localStorage.getItem('serverDetails') || '{}');
+  const serverDetails = useMemo(() => JSON.parse(localStorage.getItem('serverDetails') || '{}'), []);
   const serverId = serverDetails?.uniqueId;
 
-  const fetchShopsAndCreateMapRef = useRef(async () => {
+  const fetchData = useCallback(async () => {
     if (!serverId) return;
+    setLoading(true);
     try {
-      const response = await apiContract.getAllShops(serverId);
-      if (response.status === 200 && response.data) {
-        const shopMap = response.data.reduce((acc, shop) => {
+      const [companiesResponse, shopsResponse] = await Promise.all([
+        Axios.get(`${process.env.REACT_APP_API_BASE_URL}/servers/companies/${serverId}`),
+        apiContract.getAllShops(serverId)
+      ]);
+      
+      setTableData(companiesResponse.data.data || []);
+      
+      if (shopsResponse.status === 200 && shopsResponse.data) {
+        const shopMap = shopsResponse.data.reduce((acc, shop) => {
           if (shop.company && shop.company.id) {
             if (!acc[shop.company.id]) {
               acc[shop.company.id] = [];
@@ -65,63 +75,42 @@ const Company = () => {
         }, {});
         setCompanyShopsMap(shopMap);
       }
-    } catch (error) {
-      console.error("Error fetching shops:", error);
-      setSnackbar({ open: true, message: 'Error fetching shops', severity: 'error' });
-    }
-  }, [serverId]);
-
-  const fetchDataRef = useRef(async () => {
-    if (!serverId) return;
-    setLoading(true);
-    try {
-      const response = await Axios.get(
-        `${process.env.REACT_APP_API_BASE_URL}/servers/companies/${serverId}`
-      );
-      setTableData(response.data.data || []);
-      await fetchShopsAndCreateMapRef();
-      setSnackbar({ open: true, message: 'Companies fetched successfully', severity: 'success' });
+      
+      setSnackbar({ open: true, message: 'Companies and shops fetched successfully', severity: 'success' });
     } catch (error) {
       console.error("Error fetching data:", error);
-      setSnackbar({ open: true, message: 'Error fetching companies', severity: 'error' });
+      setSnackbar({ open: true, message: 'Error fetching companies and shops', severity: 'error' });
     } finally {
       setLoading(false);
     }
-  });
+  }, [serverId]);
 
   useEffect(() => {
     if (serverId) {
-      fetchDataRef.current();
+      fetchData();
     }
-  }, [serverId]);
+  }, [serverId,fetchData]);
 
-  const handleCreateNewRow = async (values) => {
+  const handleCreateNewRow = useCallback(async (values) => {
     try {
-      const response = await Axios.post(
-        `${process.env.REACT_APP_API_BASE_URL}/servers/company/${serverId}`,
-        values
-      );
-      if (response.data.status){
+      const response = await Axios.post(`${process.env.REACT_APP_API_BASE_URL}/servers/company/${serverId}`, values);
+      if (response.data.status) {
         setTableData(prevData => [response.data, ...prevData]);
         setCreateModalOpen(false);
         setSnackbar({ open: true, message: 'Company created successfully', severity: 'success' });
-        fetchDataRef();
-      } 
-      else{
+        fetchData();
+      } else {
         setSnackbar({ open: true, message: response.data.message, severity: 'error' });
-
       }
     } catch (error) {
       console.error("Error creating a new row:", error);
       setSnackbar({ open: true, message: 'Error creating company', severity: 'error' });
     }
-  };
+  }, [serverId, fetchData]);
 
-  const handleEditRow = async (row) => {
+  const handleEditRow = useCallback(async (row) => {
     try {
-      const response = await Axios.get(
-        `${process.env.REACT_APP_API_BASE_URL}/servers/singleComp/${serverId}/${row.id}`
-      );
+      const response = await Axios.get(`${process.env.REACT_APP_API_BASE_URL}/servers/singleComp/${serverId}/${row.id}`);
       if (response && response.data && response.data.data) {
         setEditModalValues({
           id: response.data.data[0].id,
@@ -144,40 +133,35 @@ const Company = () => {
       console.error("Error editing row:", error);
       setSnackbar({ open: true, message: 'Error fetching company details', severity: 'error' });
     }
-  };
+  }, [serverId]);
 
-  const handleDeleteRow = (row) => {
+  const handleDeleteRow = useCallback((row) => {
     setCompanyToDelete(row);
     setDeleteModalOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (companyToDelete) {
       try {
-        await Axios.delete(
-          `${process.env.REACT_APP_API_BASE_URL}/servers/deletecompany/${serverId}/${companyToDelete.id}`
-        );
+        await Axios.delete(`${process.env.REACT_APP_API_BASE_URL}/servers/deletecompany/${serverId}/${companyToDelete.id}`);
         setDeleteModalOpen(false);
         setCompanyToDelete(null);
         setSnackbar({ open: true, message: 'Company deleted successfully', severity: 'success' });
-        fetchDataRef();
+        fetchData();
       } catch (error) {
         console.error("Error deleting row:", error);
         setSnackbar({ open: true, message: 'Error deleting company', severity: 'error' });
       }
     }
-  };
+  }, [companyToDelete, serverId, fetchData]);
 
-  const columns = useMemo(
-    () => [
-      { accessorKey: "id", header: "ID", enableEditing: false },
-      { accessorKey: "companyName", header: "Company-Name" },
-      { accessorKey: "email", header: "Email" },
-      { accessorKey: "phone", header: "Contact No." },
-      { accessorKey: "maxLicense", header: "Max-License" },
-    ],
-    []
-  );
+  const columns = useMemo(() => [
+    { accessorKey: "id", header: "ID", enableEditing: false },
+    { accessorKey: "companyName", header: "Company-Name" },
+    { accessorKey: "email", header: "Email" },
+    { accessorKey: "phone", header: "Contact No." },
+    { accessorKey: "maxLicense", header: "Max-License" },
+  ], []);
 
   return (
     <>
@@ -296,21 +280,18 @@ const Company = () => {
             onSubmit={handleCreateNewRow}
             setSnackbar={setSnackbar}
           />
-
           <EditCompanyModal
             open={editModalOpen}
             onClose={() => setEditModalOpen(false)}
-            onSubmit={fetchDataRef}
+            onSubmit={fetchData}
             values={editModalValues}
             setSnackbar={setSnackbar}
           />
-          
           <DeleteConfirmationModal
             open={deleteModalOpen}
             onClose={() => setDeleteModalOpen(false)}
             onConfirm={confirmDelete}
           />
-
           <Snackbar
             open={snackbar.open}
             autoHideDuration={6000}
@@ -326,6 +307,7 @@ const Company = () => {
     </>
   );
 };
+
 
 const DeleteConfirmationModal = ({ open, onClose, onConfirm }) => {
   return (
@@ -351,7 +333,7 @@ const DeleteConfirmationModal = ({ open, onClose, onConfirm }) => {
 };
 
 const CreateNewCompanyModal = ({ open, onClose, onSubmit, setSnackbar }) => {
-  const initialValues = {
+  const initialValues = useMemo(() => ({
     companyName: '',
     email: '',
     phone: '',
@@ -364,7 +346,7 @@ const CreateNewCompanyModal = ({ open, onClose, onSubmit, setSnackbar }) => {
     isPrimary: false,
     maxLicense: '',
     password: '',
-  };
+  }),[]);
 
   const [values, setValues] = useState(initialValues);
   const [showPassword, setShowPassword] = useState(false);
@@ -421,7 +403,7 @@ const CreateNewCompanyModal = ({ open, onClose, onSubmit, setSnackbar }) => {
       setValues(initialValues);
       setErrors({});
     }
-  }, [open, initialValues]);
+  }, [open]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>

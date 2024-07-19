@@ -140,7 +140,45 @@ export default function Navbar() {
           </LogoSection>
 
           <UserSection>
+           
+
             {serverDetails && (
+              <Tooltip title="Server Name">
+                <Paper
+                  elevation={0}
+                  sx={{
+                    padding: "4px 12px",
+                    backgroundColor: alpha("#ffffff", 0.1),
+                    borderRadius: "20px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "white",
+                      fontWeight: "bold",
+                      fontFamily: "Arial, sans-serif",
+                    }}
+                  >
+                    {serverDetails.pathName}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "white",
+                      fontWeight: "bold",
+                      fontFamily: "Arial, sans-serif",
+                    }}
+                  >
+                    {serverDetails.pathname}
+                  </Typography>
+                </Paper>
+              </Tooltip>
+
+            )}
+             {serverDetails && (
               <Tooltip title="Connected Server">
                 <Paper
                   elevation={0}
@@ -162,8 +200,19 @@ export default function Navbar() {
                   >
                     {serverDetails.IPaddress}:{serverDetails.portNumber}
                   </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "white",
+                      fontWeight: "bold",
+                      fontFamily: "Arial, sans-serif",
+                    }}
+                  >
+                    {serverDetails.pathname}
+                  </Typography>
                 </Paper>
               </Tooltip>
+
             )}
             {serverDetails && (
               <Tooltip title="Disconnect">
