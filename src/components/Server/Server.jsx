@@ -49,6 +49,9 @@ const Server = () => {
     severity: "success",
   });
 
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [serverToDelete, setServerToDelete] = useState(null);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -144,19 +147,34 @@ const Server = () => {
       });
   };
 
-  const handleDeleteRow = async (row) => {
-    if (!window.confirm(`Are you sure you want to delete ID: ${row.id}`)) {
-      return;
-    }
+  const handleDeleteRow = (row) => {
+    setServerToDelete(row);
+    setDeleteConfirmOpen(true);
+  };
 
-    try {
-      await Axios.delete(
-        `${process.env.REACT_APP_API_BASE_URL}/servers/${row.uniqueId}`
-      );
-      fetchData(); // Refresh the table data
-    } catch (error) {
-      console.error("Error deleting row:", error);
+  const confirmDelete = async () => {
+    if (serverToDelete) {
+      try {
+        await Axios.delete(
+          `${process.env.REACT_APP_API_BASE_URL}/servers/${serverToDelete.uniqueId}`
+        );
+        fetchData(); // Refresh the table data
+        setSnackbar({
+          open: true,
+          message: "Server deleted successfully",
+          severity: "success",
+        });
+      } catch (error) {
+        console.error("Error deleting row:", error);
+        setSnackbar({
+          open: true,
+          message: "Error deleting server",
+          severity: "error",
+        });
+      }
     }
+    setDeleteConfirmOpen(false);
+    setServerToDelete(null);
   };
 
   const handleCloseSnackbar = (event, reason) => {
@@ -281,6 +299,12 @@ const Server = () => {
             onSubmit={handleLogin}
             selectedRow={selectedRow}
           />
+          <DeleteConfirmationModal
+            open={deleteConfirmOpen}
+            onClose={() => setDeleteConfirmOpen(false)}
+            onConfirm={confirmDelete}
+            serverName={serverToDelete ? serverToDelete.pathName : ""}
+          />
           <Snackbar
             anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             open={snackbar.open}
@@ -296,7 +320,6 @@ const Server = () => {
     </>
   );
 };
-
 
 export const CreateNewServerModal = ({ open, onClose, onSubmit }) => {
   const [values, setValues] = useState({
@@ -357,7 +380,6 @@ export const CreateNewServerModal = ({ open, onClose, onSubmit }) => {
               fullWidth
             />
           </Grid>
-       
         </Grid>
       </DialogContent>
       <DialogActions>
@@ -377,17 +399,14 @@ export const CreateNewServerModal = ({ open, onClose, onSubmit }) => {
   );
 };
 
-// Define EditServerModal
 export const EditServerModal = ({ open, onClose, onSubmit, values }) => {
   const [editedValues, setEditedValues] = useState(values);
 
   useEffect(() => {
-    // Update editedValues when values change (initially and on subsequent edits)
     setEditedValues(values);
   }, [values]);
 
   const handleEditSubmit = async () => {
-    // Implement your validation logic here if needed
     const res = await Axios.put(
       `${process.env.REACT_APP_API_BASE_URL}/servers/${values.uniqueId}`,
       editedValues
@@ -463,7 +482,6 @@ export const EditServerModal = ({ open, onClose, onSubmit, values }) => {
   );
 };
 
-//LoginDetailsDialog
 export const LoginDetailsDialog = ({
   open,
   onClose,
@@ -526,9 +544,31 @@ export const LoginDetailsDialog = ({
           Login
         </Button>
       </DialogActions>
-      
     </Dialog>
+  );
+};
 
+const DeleteConfirmationModal = ({ open, onClose, onConfirm, serverName }) => {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Confirm Deletion</DialogTitle>
+      <DialogContent>
+        <p>Are you sure you want to delete the server "{serverName}"?</p>
+        <p>This action cannot be undone.</p>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} sx={{ color: "#6FC276" }}>
+          Cancel
+        </Button>
+        <Button
+          onClick={onConfirm}
+          variant="contained"
+          sx={{ background: "#FF0000", color: "white" }}
+        >
+          Delete
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

@@ -28,6 +28,7 @@ import {
   Switch,
   FormControlLabel,
   Typography,
+  InputAdornment,
 } from "@mui/material";
 import MuiAlert from '@mui/material/Alert';
 import { FaPencilAlt, FaPlus, FaTrash, FaMobile } from "react-icons/fa";
@@ -35,6 +36,8 @@ import { MdFolderSpecial } from "react-icons/md";
 import { useParams } from "react-router-dom";
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+
 
 import Sidenav from "../../common/SideNav";
 import Navbar from "../../common/Navbar";
@@ -460,6 +463,8 @@ function Shops() {
 
 const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -471,15 +476,17 @@ const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
     companyId: Yup.string().required('Company is required'),
     licenseRegAt: Yup.date().required('License registration date is required'),
     licenseExpiresAt: Yup.date().required('License expiration date is required'),
+    licenseKey: Yup.string().required('License key is required'),
     addressLine1: Yup.string().required('Address line 1 is required'),
     addressLine2: Yup.string().required('Address line 2 is required'),
     state: Yup.string().required('State is required'),
     city: Yup.string().required('City is required'),
     pincode: Yup.string().required('Pin code is required'),
     country: Yup.string().required('Country is required'),
-    features: Yup.string().required('Features is required'),
+    features: Yup.string(),
     email: Yup.string().email('Invalid email').required('Email is required'),
     phone: Yup.string().required('Phone number is required'),
+    password: Yup.string().required('Password is required'),
     allowedDevices: Yup.number().min(1, 'At least 1 device must be allowed').required('Number of allowed devices is required'),
   });
 
@@ -489,6 +496,7 @@ const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
       companyId: "",
       licenseRegAt: "",
       licenseExpiresAt: "",
+      licenseKey: "",
       addressLine1: "",
       addressLine2: "",
       state: "",
@@ -498,6 +506,7 @@ const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
       isPrimary: 0,
       email: "",
       phone: "",
+      password: "",
       features: "",
       allowedDevices: "",
     },
@@ -517,11 +526,11 @@ const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
   
       } catch (error) {
         console.log(error);
-        // setSnackbar({
-        //   open: true,
-        //   message: "Error creating shop: " + error.message,
-        //   severity: "error",
-        // });
+        setSnackbar({
+          open: true,
+          message: "Error creating shop: " + error.message,
+          severity: "error",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -624,6 +633,59 @@ const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
                   }}
                 />
               </Grid>
+              <Grid item xs={4}>
+                <InputLabel>License Key</InputLabel>
+                <TextField
+                  name="licenseKey"
+                  value={formik.values.licenseKey}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.licenseKey && Boolean(formik.errors.licenseKey)}
+                  helperText={formik.touched.licenseKey && formik.errors.licenseKey}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+                <InputLabel>Pin Code</InputLabel>
+                <TextField
+                  name="pincode"
+                  value={formik.values.pincode}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.pincode && Boolean(formik.errors.pincode)}
+                  helperText={formik.touched.pincode && formik.errors.pincode}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={4}>
+  <InputLabel>Password</InputLabel>
+  <TextField
+    name="password"
+    type={showPassword ? "text" : "password"}
+    value={formik.values.password}
+    onChange={formik.handleChange}
+    onBlur={formik.handleBlur}
+    error={formik.touched.password && Boolean(formik.errors.password)}
+    helperText={formik.touched.password && formik.errors.password}
+    fullWidth
+    InputProps={{
+      endAdornment: (
+        <InputAdornment position="end">
+          <IconButton
+            aria-label="toggle password visibility"
+            onClick={() => setShowPassword(!showPassword)}
+            edge="end"
+          >
+            {showPassword ? <VisibilityOff /> : <Visibility />}
+          </IconButton>
+        </InputAdornment>
+      ),
+    }}
+  />
+</Grid>
+
 
               <Grid item xs={4}>
                 <InputLabel>Address Line 1</InputLabel>
@@ -678,7 +740,7 @@ const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
                 />
               </Grid>
 
-              <Grid item xs={4}>
+              {/* <Grid item xs={4}>
                 <InputLabel>Pin Code</InputLabel>
                 <TextField
                   name="pincode"
@@ -689,7 +751,7 @@ const CreateNewShopModal = ({ open, onClose, onSubmit, companies }) => {
                   helperText={formik.touched.pincode && formik.errors.pincode}
                   fullWidth
                 />
-              </Grid>
+              </Grid> */}
 
               <Grid item xs={4}>
                 <InputLabel>Country</InputLabel>
@@ -1231,8 +1293,9 @@ const EditShopModal = ({ open, onClose, onSubmit, values, serverId }) => {
         city: values.address?.city || '',
         pincode: values.address?.pincode || '',
         country: values.address?.country || '',
+        isPrimary: values.address?.isPrimary || 0,
+
       },
-      isPrimary: values.isPrimary || false,
       email: values.email || '',
       phone: values.phone || '',
       allowedDevices: values.allowedDevices || 0,
